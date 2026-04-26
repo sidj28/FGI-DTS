@@ -7,18 +7,18 @@ use Illuminate\Database\Eloquent\Model;
 
 class ShipmentStatusList extends Model
 {
-    use HasFactory;
+  use HasFactory;
 
-    protected $table = 'shipmentStatusList';
-    protected $primaryKey = 'statusId';
-    public $timestamps = false;
+  protected $table = 'shipmentStatusList';
+  protected $primaryKey = 'statusId';
+  public $timestamps = false;
 
-    protected $fillable = [
-        'statusName',
-    ];
+  protected $fillable = [
+    'statusName',
+  ];
 
-    public function shipments()
-    {
-        return $this->hasMany(Shipment::class, 'statusId', 'statusId');
-    }
+  public function shipments()
+  {
+    return $this->hasMany(Shipment::class, 'statusId', 'statusId');
+  }
 }

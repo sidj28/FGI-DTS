@@ -7,18 +7,18 @@ use Illuminate\Database\Eloquent\Model;
 
 class CustomDoc extends Model
 {
-    use HasFactory;
+  use HasFactory;
 
-    protected $table = 'customDocs';
-    protected $primaryKey = 'customDocId';
-    public $timestamps = false;
+  protected $table = 'customDocs';
+  protected $primaryKey = 'customDocId';
+  public $timestamps = false;
 
-    protected $fillable = [
-        'docName',
-    ];
+  protected $fillable = [
+    'docName',
+  ];
 
-    public function shipmentDocuments()
-    {
-        return $this->hasMany(ShipmentDocument::class, 'customDocId', 'customDocId');
-    }
+  public function shipmentDocuments()
+  {
+    return $this->hasMany(ShipmentDocument::class, 'customDocId', 'customDocId');
+  }
 }
