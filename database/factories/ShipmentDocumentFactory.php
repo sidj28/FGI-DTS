@@ -12,17 +12,17 @@ use Illuminate\Database\Eloquent\Factories\Factory;
  */
 class ShipmentDocumentFactory extends Factory
 {
-    /**
-     * Define the model's default state.
-     *
-     * @return array<string, mixed>
-     */
-    public function definition(): array
-    {
-        return [
-            'shipmentId' => Shipment::factory(),
-            'customDocId' => CustomDoc::factory(),
-            'isRequired' => fake()->boolean(),
-        ];
-    }
+  /**
+   * Define the model's default state.
+   *
+   * @return array<string, mixed>
+   */
+  public function definition(): array
+  {
+    return [
+      'shipmentId' => Shipment::factory(),
+      'customDocId' => CustomDoc::factory(),
+      'isRequired' => fake()->boolean(),
+    ];
+  }
 }

@@ -10,17 +10,17 @@ use Illuminate\Database\Eloquent\Factories\Factory;
  */
 class PermissionFactory extends Factory
 {
-    /**
-     * Define the model's default state.
-     *
-     * @return array<string, mixed>
-     */
-    public function definition(): array
-    {
-        return [
-            'name' => fake()->word(),
-            'resource' => fake()->word(),
-            'action' => fake()->randomElement(['create', 'read', 'update', 'delete']),
-        ];
-    }
+  /**
+   * Define the model's default state.
+   *
+   * @return array<string, mixed>
+   */
+  public function definition(): array
+  {
+    return [
+      'name' => fake()->word(),
+      'resource' => fake()->word(),
+      'action' => fake()->randomElement(['create', 'read', 'update', 'delete']),
+    ];
+  }
 }

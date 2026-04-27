@@ -9,33 +9,33 @@ class DocumentStatus extends Model
 {
   use HasFactory;
 
-  protected $table = 'documentStatuses';
-  protected $primaryKey = 'docStatusId';
+  protected $table = 'document_statuses';
+  protected $primaryKey = 'doc_status_id';
   public $timestamps = false;
 
   protected $fillable = [
-    'shipmentDocId',
-    'statusId',
-    'changedAt',
-    'changedBy',
+    'shipment_doc_id',
+    'status_id',
+    'changed_at',
+    'changed_by',
   ];
 
   protected $casts = [
-    'changedAt' => 'datetime',
+    'changed_at' => 'datetime',
   ];
 
   public function shipmentDocument()
   {
-    return $this->belongsTo(ShipmentDocument::class, 'shipmentDocId', 'shipmentDocId');
+    return $this->belongsTo(ShipmentDocument::class, 'shipment_doc_id', 'shipment_doc_id');
   }
 
   public function status()
   {
-    return $this->belongsTo(DocumentStatusList::class, 'statusId', 'statusId');
+    return $this->belongsTo(DocumentStatusList::class, 'status_id', 'status_id');
   }
 
   public function changedByUser()
   {
-    return $this->belongsTo(User::class, 'changedBy', 'id');
+    return $this->belongsTo(User::class, 'changed_by', 'id');
   }
 }

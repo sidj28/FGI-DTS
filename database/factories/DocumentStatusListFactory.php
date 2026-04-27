@@ -10,15 +10,15 @@ use Illuminate\Database\Eloquent\Factories\Factory;
  */
 class DocumentStatusListFactory extends Factory
 {
-    /**
-     * Define the model's default state.
-     *
-     * @return array<string, mixed>
-     */
-    public function definition(): array
-    {
-        return [
-            'statusName' => fake()->randomElement(['Pending', 'Approved', 'Rejected', 'Expired']),
-        ];
-    }
+  /**
+   * Define the model's default state.
+   *
+   * @return array<string, mixed>
+   */
+  public function definition(): array
+  {
+    return [
+      'statusName' => fake()->randomElement(['Pending', 'Approved', 'Rejected', 'Expired']),
+    ];
+  }
 }

@@ -8,19 +8,19 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('userRoles', function (Blueprint $table) {
-            $table->unsignedInteger('userId');
-            $table->unsignedInteger('roleId');
+        Schema::create('user_roles', function (Blueprint $table) {
+            $table->unsignedBigInteger('user_id');
+            $table->unsignedInteger('role_id');
 
-            $table->primary(['userId', 'roleId']);
+            $table->primary(['user_id', 'role_id']);
 
-            $table->foreign('userId')->references('id')->on('users')->onDelete('cascade');
-            $table->foreign('roleId')->references('roleId')->on('roles')->onDelete('cascade');
+            $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
+            $table->foreign('role_id')->references('role_id')->on('roles')->onDelete('cascade');
         });
     }
 
     public function down(): void
     {
-        Schema::dropIfExists('userRoles');
+        Schema::dropIfExists('user_roles');
     }
 };

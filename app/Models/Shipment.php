@@ -10,39 +10,39 @@ class Shipment extends Model
   use HasFactory;
 
   protected $table = 'shipments';
-  protected $primaryKey = 'shipmentId';
+  protected $primaryKey = 'shipment_id';
   public $timestamps = false;
 
   protected $fillable = [
     'year',
     'month',
-    'shipmentReference',
+    'shipment_reference',
     'brand',
     'incoterm',
-    'actualTimeOfArrival',
+    'actual_time_of_arrival',
     'broker',
-    'brandManager',
-    'shipmentType',
-    'statusId',
-    'createdAt',
-    'updatedAt',
-    'archivedAt',
+    'brand_manager',
+    'shipment_type',
+    'status_id',
+    'created_at',
+    'updated_at',
+    'archived_at',
   ];
 
   protected $casts = [
-    'actualTimeOfArrival' => 'datetime',
-    'createdAt' => 'datetime',
-    'updatedAt' => 'datetime',
-    'archivedAt' => 'datetime',
+    'actual_time_of_arrival' => 'datetime',
+    'created_at' => 'datetime',
+    'updated_at' => 'datetime',
+    'archived_at' => 'datetime',
   ];
 
   public function status()
   {
-    return $this->belongsTo(ShipmentStatusList::class, 'statusId', 'statusId');
+    return $this->belongsTo(ShipmentStatusList::class, 'status_id', 'status_id');
   }
 
   public function documents()
   {
-    return $this->hasMany(ShipmentDocument::class, 'shipmentId', 'shipmentId');
+    return $this->hasMany(ShipmentDocument::class, 'shipment_id', 'shipment_id');
   }
 }

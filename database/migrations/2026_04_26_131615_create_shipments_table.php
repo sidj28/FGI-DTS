@@ -9,22 +9,22 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('shipments', function (Blueprint $table) {
-            $table->increments('shipmentId');
+            $table->increments('shipment_id');
             $table->integer('year')->nullable();
             $table->integer('month')->nullable();
-            $table->string('shipmentReference')->nullable();
+            $table->string('shipment_reference')->nullable();
             $table->string('brand')->nullable();
             $table->string('incoterm')->nullable();
-            $table->timestamp('actualTimeOfArrival')->nullable();
+            $table->timestamp('actual_time_of_arrival')->nullable();
             $table->string('broker')->nullable();
-            $table->string('brandManager')->nullable();
-            $table->string('shipmentType')->nullable();
-            $table->unsignedInteger('statusId')->nullable();
-            $table->timestamp('createdAt')->nullable();
-            $table->timestamp('updatedAt')->nullable();
-            $table->timestamp('archivedAt')->nullable();
+            $table->string('brand_manager')->nullable();
+            $table->string('shipment_type')->nullable();
+            $table->unsignedInteger('status_id')->nullable();
+            $table->timestamp('created_at')->nullable();
+            $table->timestamp('updated_at')->nullable();
+            $table->timestamp('archived_at')->nullable();
 
-            $table->foreign('statusId')->references('statusId')->on('shipmentStatusList')->onDelete('set null');
+            $table->foreign('status_id')->references('status_id')->on('shipment_status_list')->onDelete('set null');
         });
     }
 

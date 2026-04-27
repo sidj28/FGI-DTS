@@ -8,21 +8,14 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('documentStatuses', function (Blueprint $table) {
-            $table->increments('docStatusId');
-            $table->unsignedInteger('shipmentDocId')->nullable();
-            $table->unsignedInteger('statusId')->nullable();
-            $table->timestamp('changedAt')->nullable();
-            $table->unsignedBigInteger('changedBy')->nullable();
-
-            $table->foreign('shipmentDocId')->references('shipmentDocId')->on('shipmentDocuments')->onDelete('cascade');
-            $table->foreign('statusId')->references('statusId')->on('documentStatusList')->onDelete('set null');
-            $table->foreign('changedBy')->references('id')->on('users')->onDelete('set null');
+        Schema::create('document_status_list', function (Blueprint $table) {
+            $table->increments('status_id');
+            $table->string('status_name')->nullable();
         });
     }
 
     public function down(): void
     {
-        Schema::dropIfExists('documentStatuses');
+        Schema::dropIfExists('document_status_list');
     }
 };

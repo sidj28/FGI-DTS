@@ -9,16 +9,16 @@ class DocumentStatusList extends Model
 {
   use HasFactory;
 
-  protected $table = 'documentStatusList';
-  protected $primaryKey = 'statusId';
+  protected $table = 'document_status_list';
+  protected $primaryKey = 'status_id';
   public $timestamps = false;
 
   protected $fillable = [
-    'statusName',
+    'status_name',
   ];
 
   public function documentStatuses()
   {
-    return $this->hasMany(DocumentStatus::class, 'statusId', 'statusId');
+    return $this->hasMany(DocumentStatus::class, 'status_id', 'status_id');
   }
 }

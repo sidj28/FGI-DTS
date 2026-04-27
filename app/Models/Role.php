@@ -10,20 +10,20 @@ class Role extends Model
   use HasFactory;
 
   protected $table = 'roles';
-  protected $primaryKey = 'roleId';
+  protected $primaryKey = 'role_id';
   public $timestamps = false;
 
   protected $fillable = [
-    'roleName',
+    'role_name',
   ];
 
   public function users()
   {
-    return $this->belongsToMany(User::class, 'userRoles', 'roleId', 'userId');
+    return $this->belongsToMany(User::class, 'user_roles', 'role_id', 'user_id');
   }
 
   public function permissions()
   {
-    return $this->belongsToMany(Permission::class, 'rolePermissions', 'roleId', 'permissionId');
+    return $this->belongsToMany(Permission::class, 'role_permissions', 'role_id', 'permission_id');
   }
 }

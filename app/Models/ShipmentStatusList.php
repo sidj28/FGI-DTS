@@ -9,16 +9,16 @@ class ShipmentStatusList extends Model
 {
   use HasFactory;
 
-  protected $table = 'shipmentStatusList';
-  protected $primaryKey = 'statusId';
+  protected $table = 'shipment_status_list';
+  protected $primaryKey = 'status_id';
   public $timestamps = false;
 
   protected $fillable = [
-    'statusName',
+    'status_name',
   ];
 
   public function shipments()
   {
-    return $this->hasMany(Shipment::class, 'statusId', 'statusId');
+    return $this->hasMany(Shipment::class, 'status_id', 'status_id');
   }
 }

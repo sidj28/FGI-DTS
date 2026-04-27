@@ -8,14 +8,14 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('customDocs', function (Blueprint $table) {
-            $table->increments('customDocId');
-            $table->string('docName')->nullable();
+        Schema::create('custom_docs', function (Blueprint $table) {
+            $table->increments('custom_doc_id');
+            $table->string('doc_name')->nullable();
         });
     }
 
     public function down(): void
     {
-        Schema::dropIfExists('customDocs');
+        Schema::dropIfExists('custom_docs');
     }
 };

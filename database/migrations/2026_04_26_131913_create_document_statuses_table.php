@@ -12,8 +12,15 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('document_statuses', function (Blueprint $table) {
-            $table->id();
-            $table->timestamps();
+            $table->increments('doc_status_id');
+            $table->unsignedInteger('shipment_doc_id')->nullable();
+            $table->unsignedInteger('status_id')->nullable();
+            $table->timestamp('changed_at')->nullable();
+            $table->unsignedBigInteger('changed_by')->nullable();
+
+            $table->foreign('shipment_doc_id')->references('shipment_doc_id')->on('shipment_documents')->onDelete('cascade');
+            $table->foreign('status_id')->references('status_id')->on('document_status_list')->onDelete('set null');
+            $table->foreign('changed_by')->references('id')->on('users')->onDelete('set null');
         });
     }
 

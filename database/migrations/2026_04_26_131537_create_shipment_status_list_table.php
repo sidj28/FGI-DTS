@@ -8,14 +8,14 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('shipmentStatusList', function (Blueprint $table) {
-            $table->increments('statusId');
-            $table->string('statusName')->nullable();
+        Schema::create('shipment_status_list', function (Blueprint $table) {
+            $table->increments('status_id');
+            $table->string('status_name')->nullable();
         });
     }
 
     public function down(): void
     {
-        Schema::dropIfExists('shipmentStatusList');
+        Schema::dropIfExists('shipment_status_list');
     }
 };

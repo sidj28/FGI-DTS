@@ -9,23 +9,23 @@ class RolePermission extends Model
 {
   use HasFactory;
 
-  protected $table = 'rolePermissions';
+  protected $table = 'role_permissions';
   public $timestamps = false;
   protected $primaryKey = null;
   public $incrementing = false;
 
   protected $fillable = [
-    'roleId',
-    'permissionId',
+    'role_id',
+    'permission_id',
   ];
 
   public function role()
   {
-    return $this->belongsTo(Role::class, 'roleId', 'roleId');
+    return $this->belongsTo(Role::class, 'role_id', 'role_id');
   }
 
   public function permission()
   {
-    return $this->belongsTo(Permission::class, 'permissionId', 'permissionId');
+    return $this->belongsTo(Permission::class, 'permission_id', 'permission_id');
   }
 }

@@ -9,32 +9,32 @@ class ShipmentDocument extends Model
 {
   use HasFactory;
 
-  protected $table = 'shipmentDocuments';
-  protected $primaryKey = 'shipmentDocId';
+  protected $table = 'shipment_documents';
+  protected $primaryKey = 'shipment_doc_id';
   public $timestamps = false;
 
   protected $fillable = [
-    'shipmentId',
-    'customDocId',
-    'isRequired',
+    'shipment_id',
+    'custom_doc_id',
+    'is_required',
   ];
 
   protected $casts = [
-    'isRequired' => 'boolean',
+    'is_required' => 'boolean',
   ];
 
   public function shipment()
   {
-    return $this->belongsTo(Shipment::class, 'shipmentId', 'shipmentId');
+    return $this->belongsTo(Shipment::class, 'shipment_id', 'shipment_id');
   }
 
   public function customDoc()
   {
-    return $this->belongsTo(CustomDoc::class, 'customDocId', 'customDocId');
+    return $this->belongsTo(CustomDoc::class, 'custom_doc_id', 'custom_doc_id');
   }
 
   public function documentStatuses()
   {
-    return $this->hasMany(DocumentStatus::class, 'shipmentDocId', 'shipmentDocId');
+    return $this->hasMany(DocumentStatus::class, 'shipment_doc_id', 'shipment_doc_id');
   }
 }

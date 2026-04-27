@@ -9,16 +9,16 @@ class CustomDoc extends Model
 {
   use HasFactory;
 
-  protected $table = 'customDocs';
-  protected $primaryKey = 'customDocId';
+  protected $table = 'custom_docs';
+  protected $primaryKey = 'custom_doc_id';
   public $timestamps = false;
 
   protected $fillable = [
-    'docName',
+    'doc_name',
   ];
 
   public function shipmentDocuments()
   {
-    return $this->hasMany(ShipmentDocument::class, 'customDocId', 'customDocId');
+    return $this->hasMany(ShipmentDocument::class, 'custom_doc_id', 'custom_doc_id');
   }
 }
