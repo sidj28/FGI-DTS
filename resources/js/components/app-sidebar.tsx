@@ -23,24 +23,9 @@ const mainNavItems: NavItem[] = [
         icon: LayoutGrid,
     },
     {
-        title: 'Shipping',
-        href: '#',
-        icon: Ship,
-    },
-    {
-        title: 'Reports',
-        href: '#',
-        icon: BarChart3,
-    },
-    {
-        title: 'Logs',
-        href: '#',
-        icon: List,
-    },
-    {
-        title: 'FAQs',
-        href: '#',
-        icon: HelpCircle,
+        title: 'Shipments',
+        href: '/shipments',
+        icon: Package,
     },
 ];
 
@@ -71,11 +56,9 @@ export function AppSidebar() {
                     </SidebarMenuItem>
                 </SidebarMenu>
             </SidebarHeader>
-
             <SidebarContent>
                 <NavMain items={mainNavItems} />
             </SidebarContent>
-
             <SidebarFooter>
                 <NavFooter items={footerNavItems} className="mt-auto" />
                 <NavUser />
