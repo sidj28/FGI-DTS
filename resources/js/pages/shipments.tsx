@@ -1,7 +1,7 @@
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head } from '@inertiajs/react';
-import { Calendar, Download, Eye, Package, Pencil, Printer, Trash2, X } from 'lucide-react';
+import { Calendar, Download, Eye, FileText, Package, Pencil, Printer, Trash2, X } from 'lucide-react';
 import { type ReactNode, useState } from 'react';
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -62,8 +62,54 @@ const statusIcon = (status: string) => {
     if (status === 'failed') return <span className="text-red-500 text-lg">✘</span>;
 };
 
+const MockDocumentPreview = ({ docName, brand }: { docName: string; brand: string }) => (
+    <div className="flex flex-col gap-3 rounded-lg border bg-white p-4 shadow-inner text-xs text-gray-700 font-mono h-full">
+        {/* Mock letterhead */}
+        <div className="flex items-center justify-between border-b pb-2">
+            <div>
+                <p className="text-sm font-bold text-gray-900">{brand}</p>
+                <p className="text-gray-400">123 Trade Street, Manila, PH</p>
+            </div>
+            <div className="text-right text-gray-400">
+                <p>Doc No: MOCK-0042</p>
+                <p>Date: 04/24/26</p>
+            </div>
+        </div>
+
+        {/* Title */}
+        <p className="text-center text-sm font-semibold uppercase tracking-wide text-gray-800">
+            {docName}
+        </p>
+
+        {/* Mock content lines */}
+        <div className="flex flex-col gap-2 text-gray-500">
+            {[
+                ['Shipper', brand],
+                ['Consignee', 'SK Devan Trading Co.'],
+                ['Port of Loading', 'Shanghai, CN'],
+                ['Port of Discharge', 'Manila, PH'],
+                ['Vessel / Flight', 'MV ORIENT STAR 12'],
+                ['B/L Number', 'BL-2025-00408'],
+                ['Gross Weight', '1,240 KGS'],
+                ['Measurement', '8.5 CBM'],
+            ].map(([label, value]) => (
+                <div key={label} className="flex justify-between border-b border-dashed border-gray-100 pb-1">
+                    <span className="text-gray-400">{label}</span>
+                    <span className="font-medium text-gray-700">{value}</span>
+                </div>
+            ))}
+        </div>
+
+        {/* Mock footer */}
+        <div className="mt-auto border-t pt-2 text-gray-300 text-center">
+            — MOCK PREVIEW — NOT AN OFFICIAL DOCUMENT —
+        </div>
+    </div>
+);
+
 export default function Shipments() {
     const [activeDocPanel, setActiveDocPanel] = useState<number | null>(null);
+    const [previewDoc, setPreviewDoc] = useState<string | null>(null);
 
     const activeShipment = activeDocPanel !== null ? shipments[activeDocPanel] : null;
 
@@ -149,7 +195,7 @@ export default function Shipments() {
                                                     {checkedCount}/{totalCount}
                                                 </span>
                                                 <button
-                                                    onClick={() => setActiveDocPanel(i)}
+                                                    onClick={() => { setActiveDocPanel(i); setPreviewDoc(null); }}
                                                     className="flex items-center gap-1 rounded-md border border-purple-500 px-2 py-1 text-xs text-purple-600 hover:bg-purple-50"
                                                 >
                                                     <Eye className="h-3 w-3" /> View
@@ -184,51 +230,85 @@ export default function Shipments() {
                 </div>
             </div>
 
-            {/* Document Dialog — outside the table entirely */}
+            {/* Document Dialog */}
             {activeShipment !== null && (
                 <div
                     className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
-                    onClick={() => setActiveDocPanel(null)}
+                    onClick={() => { setActiveDocPanel(null); setPreviewDoc(null); }}
                 >
                     <div
-                        className="w-72 rounded-xl border bg-white shadow-2xl"
+                        className="flex h-[520px] w-[720px] rounded-xl border bg-white shadow-2xl overflow-hidden"
                         onClick={(e) => e.stopPropagation()}
                     >
-                        <div className="flex items-center justify-between border-b px-4 py-3">
-                            <div>
-                                <p className="text-sm font-semibold">Documents</p>
-                                <p className="text-xs text-muted-foreground">{activeShipment.brand}</p>
+                        {/* Left — Checklist */}
+                        <div className="flex w-56 flex-shrink-0 flex-col border-r">
+                            <div className="flex items-center justify-between border-b px-4 py-3">
+                                <div>
+                                    <p className="text-sm font-semibold">Documents</p>
+                                    <p className="text-xs text-muted-foreground">{activeShipment.brand}</p>
+                                </div>
+                                <button onClick={() => { setActiveDocPanel(null); setPreviewDoc(null); }}>
+                                    <X className="h-4 w-4 text-gray-400 hover:text-gray-600" />
+                                </button>
                             </div>
-                            <button onClick={() => setActiveDocPanel(null)}>
-                                <X className="h-4 w-4 text-gray-400 hover:text-gray-600" />
-                            </button>
+
+                            <ul className="flex flex-col gap-1 overflow-y-auto p-3 flex-1">
+                                {activeShipment.documents.map((doc, di) => (
+                                    <li
+                                        key={di}
+                                        onClick={() => setPreviewDoc(doc.name)}
+                                        className={`flex cursor-pointer items-center gap-2 rounded-md px-2 py-2 text-sm transition-colors ${
+                                            previewDoc === doc.name
+                                                ? 'bg-purple-50 text-purple-700'
+                                                : 'hover:bg-muted/50'
+                                        }`}
+                                    >
+                                        <input
+                                            type="checkbox"
+                                            checked={doc.checked}
+                                            readOnly
+                                            className="h-4 w-4 rounded border"
+                                            onClick={(e) => e.stopPropagation()}
+                                        />
+                                        <FileText className={`h-3.5 w-3.5 flex-shrink-0 ${doc.checked ? 'text-green-500' : 'text-gray-300'}`} />
+                                        <span className={`text-xs leading-tight ${doc.checked ? 'text-gray-800' : 'text-gray-400'}`}>
+                                            {doc.name}
+                                        </span>
+                                    </li>
+                                ))}
+                            </ul>
+
+                            <div className="border-t px-4 py-3 flex items-center justify-between">
+                                <span className="text-xs text-muted-foreground">
+                                    {activeShipment.documents.filter(d => d.checked).length} of {activeShipment.documents.length}
+                                </span>
+                                <button
+                                    onClick={() => { setActiveDocPanel(null); setPreviewDoc(null); }}
+                                    className="rounded-md bg-primary px-3 py-1.5 text-xs text-primary-foreground hover:bg-primary/90"
+                                >
+                                    Close
+                                </button>
+                            </div>
                         </div>
 
-                        <ul className="flex flex-col gap-1 p-4">
-                            {activeShipment.documents.map((doc, di) => (
-                                <li key={di} className="flex items-center gap-3 text-sm">
-                                    <input
-                                        type="checkbox"
-                                        defaultChecked={doc.checked}
-                                        className="h-4 w-4 rounded border"
-                                    />
-                                    <span className={doc.checked ? 'text-gray-800' : 'text-gray-400'}>
-                                        {doc.name}
-                                    </span>
-                                </li>
-                            ))}
-                        </ul>
+                        {/* Right — Preview */}
+                        <div className="flex flex-1 flex-col">
+                            <div className="border-b px-4 py-3">
+                                <p className="text-sm font-semibold text-gray-700">
+                                    {previewDoc ?? 'Select a document to preview'}
+                                </p>
+                            </div>
 
-                        <div className="flex items-center justify-between border-t px-4 py-3">
-                            <span className="text-xs text-muted-foreground">
-                                {activeShipment.documents.filter(d => d.checked).length} of {activeShipment.documents.length} completed
-                            </span>
-                            <button
-                                onClick={() => setActiveDocPanel(null)}
-                                className="rounded-md bg-primary px-3 py-1.5 text-xs text-primary-foreground hover:bg-primary/90"
-                            >
-                                Close
-                            </button>
+                            <div className="flex-1 overflow-y-auto p-4">
+                                {previewDoc ? (
+                                    <MockDocumentPreview docName={previewDoc} brand={activeShipment.brand} />
+                                ) : (
+                                    <div className="flex h-full flex-col items-center justify-center gap-3 text-gray-300">
+                                        <FileText className="h-16 w-16" />
+                                        <p className="text-sm">Click a document on the left to preview</p>
+                                    </div>
+                                )}
+                            </div>
                         </div>
                     </div>
                 </div>
