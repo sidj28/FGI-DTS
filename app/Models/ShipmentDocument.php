@@ -16,11 +16,9 @@ class ShipmentDocument extends Model
   protected $fillable = [
     'shipment_id',
     'custom_doc_id',
-    'is_required',
   ];
 
   protected $casts = [
-    'is_required' => 'boolean',
   ];
 
   public function shipment()
@@ -36,5 +34,11 @@ class ShipmentDocument extends Model
   public function documentStatuses()
   {
     return $this->hasMany(DocumentStatus::class, 'shipment_doc_id', 'shipment_doc_id');
+  }
+
+  public function currentStatus()
+  {
+    return $this->hasOne(DocumentStatus::class, 'shipment_doc_id', 'shipment_doc_id')
+                ->where('is_current', true);
   }
 }

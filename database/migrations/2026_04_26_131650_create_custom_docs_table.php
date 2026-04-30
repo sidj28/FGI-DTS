@@ -9,8 +9,9 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('custom_docs', function (Blueprint $table) {
-            $table->increments('custom_doc_id');
+            $table->id('custom_doc_id');
             $table->string('doc_name')->nullable();
+            $table->string('doc_full_name')->nullable();
         });
     }
 

@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use Laravel\Fortify\Features;
+use App\Http\Controllers\ShipmentController;
 
 Route::inertia('/', 'welcome', [
     'canRegister' => Features::enabled(Features::registration()),
@@ -9,7 +10,14 @@ Route::inertia('/', 'welcome', [
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::inertia('dashboard', 'dashboard')->name('dashboard');
-    Route::inertia('shipments', 'shipments')->name('shipments');
+
+    // Resource routes for shipments (handles index, create, store, etc.)
+    Route::resource('shipments', ShipmentController::class)->parameters([
+        'shipments' => 'shipment:shipment_id',
+    ]);
+
+    Route::post('shipments/documents/{shipment_doc_id}/status', [ShipmentController::class, 'updateDocumentStatus'])
+        ->name('shipments.documents.status');
 });
 
 require __DIR__.'/settings.php';

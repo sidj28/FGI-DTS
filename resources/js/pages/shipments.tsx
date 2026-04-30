@@ -1,70 +1,105 @@
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
-import { Head } from '@inertiajs/react';
-import { Calendar, Download, Eye, FileText, Package, Pencil, Printer, Trash2, X } from 'lucide-react';
+import { Head, router } from '@inertiajs/react';
+import { Calendar, CheckCircle, Download, Eye, FileText, Package, Pencil, Printer, Trash2, X, XCircle } from 'lucide-react';
 import { type ReactNode, useState } from 'react';
+
+// ─── Types ────────────────────────────────────────────────────────────────────
+
+interface DocumentStatusList {
+    status_id: number;
+    status_name: string;
+}
+
+interface DocumentStatus {
+    doc_status_id: number;
+    is_current: boolean;
+    status: DocumentStatusList;
+}
+
+interface CustomDoc {
+    custom_doc_id: number;
+    doc_name: string;
+    doc_full_name: string;
+}
+
+interface ShipmentDocument {
+    shipment_doc_id: number;
+    custom_doc: CustomDoc;
+    current_status: DocumentStatus | null;
+}
+
+interface ShipmentStatus {
+    status_id: number;
+    status_name: string;
+}
+
+interface ShipmentType {
+    shipment_type_id: number;
+    shipment_type_name: string;
+}
+
+interface Shipment {
+    shipment_id: number;
+    shipment_reference: string;
+    brand: string;
+    incoterm: string;
+    actual_time_of_arrival: string | null;
+    broker: string;
+    brand_manager: string;
+    created_at: string | null;
+    archived_at: string | null;
+    status: ShipmentStatus;
+    shipment_type: ShipmentType;
+    documents: ShipmentDocument[];
+}
+
+interface Props {
+    shipments: Shipment[];
+}
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Shipments', href: '/shipments' },
 ];
 
-const allDocuments = [
-    'Bill of Lading',
-    'Commercial Invoice',
-    'Packing List',
-    'Certificate of Origin',
-    'Import Permit',
-    'Insurance Certificate',
-    'Arrival Notice',
-    'Customs Declaration',
-    'Delivery Order',
-    'Inspection Certificate',
-    'Tax Invoice',
-];
-
-const shipments = [
-    { id: '2025-SKDEVAN-408', brand: 'Brumate', incoterm: 'EXW', ata: '09/25/03', broker: 'Grab Philippines', bm: 'Matthew Andre Corral', status: 'processing', created: '04/24/26', archived: '04/24/26',
-        documents: allDocuments.map((name, i) => ({ name, checked: i < 3 }))
-    },
-    { id: '2025-SKDEVAN-408', brand: 'Fendi Casa', incoterm: 'FCA', ata: '12/120/03', broker: 'Lalamove', bm: 'Shannen Salvatera', status: 'processing', created: '04/24/26', archived: '04/24/26',
-        documents: allDocuments.map((name, i) => ({ name, checked: i < 1 }))
-    },
-    { id: '2025-SKDEVAN-408', brand: 'Hunter Douglas', incoterm: 'FCA', ata: '05/27/03', broker: 'Angkas', bm: 'Terrenz Cubacub', status: 'processing', created: '04/24/26', archived: '04/24/26',
-        documents: allDocuments.map((name, i) => ({ name, checked: i < 4 }))
-    },
-    { id: '2025-SKDEVAN-408', brand: 'TechnoGym', incoterm: 'EXW', ata: '05/23/02', broker: 'MoveIt', bm: 'Gavin Lorenzo Castro', status: 'pending', created: '04/24/26', archived: '04/24/26',
-        documents: allDocuments.map((name, i) => ({ name, checked: i < 2 }))
-    },
-    { id: '2025-SKDEVAN-408', brand: 'Philips Personal Care', incoterm: 'FOB', ata: '12/22/03', broker: 'Joyride', bm: 'Jaslein Zynah Dueñas', status: 'pending', created: '04/24/26', archived: '04/24/26',
-        documents: allDocuments.map((name, i) => ({ name, checked: i < 5 }))
-    },
-    { id: '2025-SKDEVAN-408', brand: 'Villeroy & Boch', incoterm: 'FCA', ata: '04/28/04', broker: 'Grab Philippines', bm: 'Christian Jerard Abella', status: 'completed', created: '04/24/26', archived: '04/24/26',
-        documents: allDocuments.map((name) => ({ name, checked: true }))
-    },
-    { id: '2025-SKDEVAN-408', brand: 'B&B Italia', incoterm: 'FOB', ata: '04/04/04', broker: 'Joyride', bm: 'Angela Luisse Briones', status: 'completed', created: '04/24/26', archived: '04/24/26',
-        documents: allDocuments.map((name, i) => ({ name, checked: i < 8 }))
-    },
-    { id: '2025-SKDEVAN-408', brand: 'DMC', incoterm: 'EXW', ata: '04/17/04', broker: 'LBC', bm: 'Reich Alexandria Balubal', status: 'completed', created: '04/24/26', archived: '04/24/26',
-        documents: allDocuments.map((name, i) => ({ name, checked: i < 6 }))
-    },
-    { id: '2025-SKDEVAN-408', brand: 'Boffi', incoterm: 'EXW', ata: '12/29/03', broker: 'MoveIt', bm: 'Anvil Dumaual', status: 'completed', created: '04/24/26', archived: '04/24/26',
-        documents: allDocuments.map((name) => ({ name, checked: true }))
-    },
-    { id: '2025-SKDEVAN-408', brand: 'Philips Personal Care', incoterm: 'EXW', ata: '05/11/04', broker: 'Grab Philippines', bm: 'XXXXXXXX', status: 'failed', created: '04/24/26', archived: '04/24/26',
-        documents: allDocuments.map((name) => ({ name, checked: false }))
-    },
-];
-
-const statusIcon = (status: string) => {
-    if (status === 'processing') return <span className="text-blue-500 text-lg">✳</span>;
-    if (status === 'pending') return <span className="text-yellow-500 text-lg">◎</span>;
-    if (status === 'completed') return <span className="text-green-500 text-lg">✔</span>;
-    if (status === 'failed') return <span className="text-red-500 text-lg">✘</span>;
+const formatDate = (dateString: string | null) => {
+    if (!dateString) return '—';
+    return new Date(dateString).toLocaleDateString('en-US', {
+        month: '2-digit',
+        day: '2-digit',
+        year: '2-digit',
+    });
 };
 
+const statusIcon = (statusName: string) => {
+    const s = statusName.toLowerCase();
+    if (s === 'processing') return <span className="text-blue-500 text-lg">✳</span>;
+    if (s === 'pending')    return <span className="text-yellow-500 text-lg">◎</span>;
+    if (s === 'completed')  return <span className="text-green-500 text-lg">✔</span>;
+    if (s === 'failed')     return <span className="text-red-500 text-lg">✘</span>;
+    return null;
+};
+
+const isApproved = (doc: ShipmentDocument) =>
+    doc.current_status?.status?.status_name?.toLowerCase() === 'approved';
+
+const isRejected = (doc: ShipmentDocument) =>
+    doc.current_status?.status?.status_name?.toLowerCase() === 'rejected';
+
+// ─── Doc Status Indicator ─────────────────────────────────────────────────────
+
+const DocStatusIndicator = ({ doc }: { doc: ShipmentDocument }) => {
+    if (isApproved(doc)) return <CheckCircle className="h-4 w-4 text-green-500 flex-shrink-0" />;
+    if (isRejected(doc)) return <XCircle className="h-4 w-4 text-red-400 flex-shrink-0" />;
+    return <span className="h-4 w-4 flex-shrink-0 rounded-full border-2 border-gray-300 inline-block" />;
+};
+
+// ─── Mock Preview ─────────────────────────────────────────────────────────────
+
 const MockDocumentPreview = ({ docName, brand }: { docName: string; brand: string }) => (
-    <div className="flex flex-col gap-3 rounded-lg border bg-white p-4 shadow-inner text-xs text-gray-700 font-mono h-full">
-        {/* Mock letterhead */}
+    <div className="flex flex-col gap-3 rounded-lg border bg-white p-4 shadow-inner text-xs text-gray-700 font-mono">
         <div className="flex items-center justify-between border-b pb-2">
             <div>
                 <p className="text-sm font-bold text-gray-900">{brand}</p>
@@ -75,13 +110,9 @@ const MockDocumentPreview = ({ docName, brand }: { docName: string; brand: strin
                 <p>Date: 04/24/26</p>
             </div>
         </div>
-
-        {/* Title */}
         <p className="text-center text-sm font-semibold uppercase tracking-wide text-gray-800">
             {docName}
         </p>
-
-        {/* Mock content lines */}
         <div className="flex flex-col gap-2 text-gray-500">
             {[
                 ['Shipper', brand],
@@ -99,19 +130,33 @@ const MockDocumentPreview = ({ docName, brand }: { docName: string; brand: strin
                 </div>
             ))}
         </div>
-
-        {/* Mock footer */}
-        <div className="mt-auto border-t pt-2 text-gray-300 text-center">
+        <div className="mt-2 border-t pt-2 text-gray-300 text-center">
             — MOCK PREVIEW — NOT AN OFFICIAL DOCUMENT —
         </div>
     </div>
 );
 
-export default function Shipments() {
+// ─── Page ─────────────────────────────────────────────────────────────────────
+
+export default function Shipments({ shipments }: Props) {
     const [activeDocPanel, setActiveDocPanel] = useState<number | null>(null);
-    const [previewDoc, setPreviewDoc] = useState<string | null>(null);
+    const [selectedDocId, setSelectedDocId] = useState<number | null>(null);
 
     const activeShipment = activeDocPanel !== null ? shipments[activeDocPanel] : null;
+    const selectedDoc = activeShipment?.documents.find(d => d.shipment_doc_id === selectedDocId) ?? null;
+
+    const handleStatusUpdate = (shipmentDocId: number, statusId: number) => {
+        router.post(
+            `/shipments/documents/${shipmentDocId}/status`,
+            { status_id: statusId },
+            { preserveScroll: true }
+        );
+    };
+
+    const closePanel = () => {
+        setActiveDocPanel(null);
+        setSelectedDocId(null);
+    };
 
     return (
         <>
@@ -170,32 +215,32 @@ export default function Shipments() {
                         </thead>
                         <tbody>
                             {shipments.map((s, i) => {
-                                const checkedCount = s.documents.filter(d => d.checked).length;
+                                const approvedCount = s.documents.filter(isApproved).length;
                                 const totalCount = s.documents.length;
 
                                 return (
-                                    <tr key={i} className="border-t hover:bg-muted/30">
+                                    <tr key={s.shipment_id} className="border-t hover:bg-muted/30">
                                         <td className="px-4 py-3">
-                                            <input type="checkbox" defaultChecked={s.status !== 'failed'} className="h-4 w-4 rounded border" />
+                                            <input type="checkbox" className="h-4 w-4 rounded border" />
                                         </td>
-                                        <td className="px-4 py-3 font-mono text-xs">{s.id}</td>
+                                        <td className="px-4 py-3 font-mono text-xs">{s.shipment_reference}</td>
                                         <td className="px-4 py-3">{s.brand}</td>
                                         <td className="px-4 py-3">{s.incoterm}</td>
-                                        <td className="px-4 py-3">{s.ata}</td>
+                                        <td className="px-4 py-3">{formatDate(s.actual_time_of_arrival)}</td>
                                         <td className="px-4 py-3">{s.broker}</td>
-                                        <td className="px-4 py-3">{s.bm}</td>
-                                        <td className="px-4 py-3 text-center">{statusIcon(s.status)}</td>
-                                        <td className="px-4 py-3">{s.created}</td>
-                                        <td className="px-4 py-3">{s.archived}</td>
+                                        <td className="px-4 py-3">{s.brand_manager}</td>
+                                        <td className="px-4 py-3 text-center">{statusIcon(s.status.status_name)}</td>
+                                        <td className="px-4 py-3">{formatDate(s.created_at)}</td>
+                                        <td className="px-4 py-3">{formatDate(s.archived_at)}</td>
 
                                         {/* Documents Column */}
                                         <td className="px-4 py-3">
                                             <div className="flex items-center gap-2">
-                                                <span className={`text-xs font-medium ${checkedCount === totalCount ? 'text-green-600' : 'text-yellow-600'}`}>
-                                                    {checkedCount}/{totalCount}
+                                                <span className={`text-xs font-medium ${approvedCount === totalCount && totalCount > 0 ? 'text-green-600' : 'text-yellow-600'}`}>
+                                                    {approvedCount}/{totalCount}
                                                 </span>
                                                 <button
-                                                    onClick={() => { setActiveDocPanel(i); setPreviewDoc(null); }}
+                                                    onClick={() => { setActiveDocPanel(i); setSelectedDocId(null); }}
                                                     className="flex items-center gap-1 rounded-md border border-purple-500 px-2 py-1 text-xs text-purple-600 hover:bg-purple-50"
                                                 >
                                                     <Eye className="h-3 w-3" /> View
@@ -226,7 +271,7 @@ export default function Shipments() {
 
                 {/* Footer */}
                 <div className="flex items-center justify-between text-sm text-muted-foreground">
-                    <span><strong className="text-foreground">Documents Selected:</strong> 9 out of 1000</span>
+                    <span><strong className="text-foreground">Total Shipments:</strong> {shipments.length}</span>
                 </div>
             </div>
 
@@ -234,56 +279,55 @@ export default function Shipments() {
             {activeShipment !== null && (
                 <div
                     className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
-                    onClick={() => { setActiveDocPanel(null); setPreviewDoc(null); }}
+                    onClick={closePanel}
                 >
                     <div
-                        className="flex h-[520px] w-[720px] rounded-xl border bg-white shadow-2xl overflow-hidden"
+                        className="flex h-[560px] w-[760px] rounded-xl border bg-white shadow-2xl overflow-hidden"
                         onClick={(e) => e.stopPropagation()}
                     >
-                        {/* Left — Checklist */}
+                        {/* Left — Document List */}
                         <div className="flex w-56 flex-shrink-0 flex-col border-r">
                             <div className="flex items-center justify-between border-b px-4 py-3">
                                 <div>
                                     <p className="text-sm font-semibold">Documents</p>
                                     <p className="text-xs text-muted-foreground">{activeShipment.brand}</p>
                                 </div>
-                                <button onClick={() => { setActiveDocPanel(null); setPreviewDoc(null); }}>
+                                <button onClick={closePanel}>
                                     <X className="h-4 w-4 text-gray-400 hover:text-gray-600" />
                                 </button>
                             </div>
 
                             <ul className="flex flex-col gap-1 overflow-y-auto p-3 flex-1">
-                                {activeShipment.documents.map((doc, di) => (
-                                    <li
-                                        key={di}
-                                        onClick={() => setPreviewDoc(doc.name)}
-                                        className={`flex cursor-pointer items-center gap-2 rounded-md px-2 py-2 text-sm transition-colors ${
-                                            previewDoc === doc.name
-                                                ? 'bg-purple-50 text-purple-700'
-                                                : 'hover:bg-muted/50'
-                                        }`}
-                                    >
-                                        <input
-                                            type="checkbox"
-                                            checked={doc.checked}
-                                            readOnly
-                                            className="h-4 w-4 rounded border"
-                                            onClick={(e) => e.stopPropagation()}
-                                        />
-                                        <FileText className={`h-3.5 w-3.5 flex-shrink-0 ${doc.checked ? 'text-green-500' : 'text-gray-300'}`} />
-                                        <span className={`text-xs leading-tight ${doc.checked ? 'text-gray-800' : 'text-gray-400'}`}>
-                                            {doc.name}
-                                        </span>
-                                    </li>
-                                ))}
+                                {activeShipment.documents.map((doc) => {
+                                    const fullName = doc.custom_doc.doc_full_name;
+                                    const isSelected = selectedDocId === doc.shipment_doc_id;
+
+                                    return (
+                                        <li
+                                            key={doc.shipment_doc_id}
+                                            onClick={() => setSelectedDocId(doc.shipment_doc_id)}
+                                            className={`flex cursor-pointer items-center gap-2 rounded-md px-2 py-2 text-sm transition-colors ${
+                                                isSelected
+                                                    ? 'bg-purple-50 text-purple-700'
+                                                    : 'hover:bg-muted/50'
+                                            }`}
+                                        >
+                                            <DocStatusIndicator doc={doc} />
+                                            <FileText className={`h-3.5 w-3.5 flex-shrink-0 ${isApproved(doc) ? 'text-green-500' : isRejected(doc) ? 'text-red-400' : 'text-gray-300'}`} />
+                                            <span className={`text-xs leading-tight ${isApproved(doc) ? 'text-gray-800' : isRejected(doc) ? 'text-red-400' : 'text-gray-400'}`}>
+                                                {fullName}
+                                            </span>
+                                        </li>
+                                    );
+                                })}
                             </ul>
 
                             <div className="border-t px-4 py-3 flex items-center justify-between">
                                 <span className="text-xs text-muted-foreground">
-                                    {activeShipment.documents.filter(d => d.checked).length} of {activeShipment.documents.length}
+                                    {activeShipment.documents.filter(isApproved).length} of {activeShipment.documents.length} approved
                                 </span>
                                 <button
-                                    onClick={() => { setActiveDocPanel(null); setPreviewDoc(null); }}
+                                    onClick={closePanel}
                                     className="rounded-md bg-primary px-3 py-1.5 text-xs text-primary-foreground hover:bg-primary/90"
                                 >
                                     Close
@@ -291,17 +335,20 @@ export default function Shipments() {
                             </div>
                         </div>
 
-                        {/* Right — Preview */}
+                        {/* Right — Preview + Actions */}
                         <div className="flex flex-1 flex-col">
                             <div className="border-b px-4 py-3">
                                 <p className="text-sm font-semibold text-gray-700">
-                                    {previewDoc ?? 'Select a document to preview'}
+                                    {selectedDoc ? selectedDoc.custom_doc.doc_full_name : 'Select a document to preview'}
                                 </p>
                             </div>
 
                             <div className="flex-1 overflow-y-auto p-4">
-                                {previewDoc ? (
-                                    <MockDocumentPreview docName={previewDoc} brand={activeShipment.brand} />
+                                {selectedDoc ? (
+                                    <MockDocumentPreview
+                                        docName={selectedDoc.custom_doc.doc_full_name}
+                                        brand={activeShipment.brand}
+                                    />
                                 ) : (
                                     <div className="flex h-full flex-col items-center justify-center gap-3 text-gray-300">
                                         <FileText className="h-16 w-16" />
@@ -309,6 +356,36 @@ export default function Shipments() {
                                     </div>
                                 )}
                             </div>
+
+                            {/* Approve / Reject Actions */}
+                            {selectedDoc && (
+                                <div className="border-t px-4 py-3 flex items-center justify-between bg-gray-50">
+                                    <div className="text-xs text-muted-foreground">
+                                        {selectedDoc.current_status
+                                            ? <>Current: <span className={`font-medium ${isApproved(selectedDoc) ? 'text-green-600' : isRejected(selectedDoc) ? 'text-red-500' : 'text-yellow-600'}`}>
+                                                {selectedDoc.current_status.status.status_name}
+                                              </span></>
+                                            : 'No status yet'
+                                        }
+                                    </div>
+                                    <div className="flex gap-2">
+                                        <button
+                                            disabled={isApproved(selectedDoc)}
+                                            onClick={() => handleStatusUpdate(selectedDoc.shipment_doc_id, 1)}
+                                            className="flex items-center gap-1 rounded-md border border-green-500 px-3 py-1.5 text-xs text-green-600 hover:bg-green-50 disabled:opacity-40 disabled:cursor-not-allowed"
+                                        >
+                                            <CheckCircle className="h-3.5 w-3.5" /> Approve
+                                        </button>
+                                        <button
+                                            disabled={isRejected(selectedDoc)}
+                                            onClick={() => handleStatusUpdate(selectedDoc.shipment_doc_id, 3)}
+                                            className="flex items-center gap-1 rounded-md border border-red-500 px-3 py-1.5 text-xs text-red-600 hover:bg-red-50 disabled:opacity-40 disabled:cursor-not-allowed"
+                                        >
+                                            <XCircle className="h-3.5 w-3.5" /> Reject
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>
