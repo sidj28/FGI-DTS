@@ -31,14 +31,4 @@ class User extends Authenticatable
             'two_factor_confirmed_at' => 'datetime',
         ];
     }
-
-    public function roles()
-    {
-        return $this->belongsToMany(Role::class, 'user_roles', 'user_id', 'role_id');
-    }
-
-    public function documentStatuses()
-    {
-        return $this->hasMany(DocumentStatus::class, 'changed_by', 'id');
-    }
 }
