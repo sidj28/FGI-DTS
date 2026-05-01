@@ -24,8 +24,6 @@ class Shipment extends Model
     'brand_manager',
     'shipment_type',
     'status_id',
-    'created_at',
-    'updated_at',
     'archived_at',
   ];
 
@@ -44,5 +42,10 @@ class Shipment extends Model
   public function documents()
   {
     return $this->hasMany(ShipmentDocument::class, 'shipment_id', 'shipment_id');
+  }
+
+  public function shipmentType()
+  {
+    return $this->belongsTo(ShipmentType::class, 'shipment_type_id', 'shipment_type_id');
   }
 }

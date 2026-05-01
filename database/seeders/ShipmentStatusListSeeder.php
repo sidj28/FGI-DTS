@@ -13,9 +13,10 @@ class ShipmentStatusListSeeder extends Seeder
   public function run(): void
   {
     $statuses = [
-      ['status_name' => 'Completed'],
+      ['status_name' => 'Processing'],
       ['status_name' => 'Pending'],
-      ['status_name' => 'Rejected'],
+      ['status_name' => 'Failed'],
+      ['status_name' => 'Completed'],
     ];
 
     foreach ($statuses as $status) {

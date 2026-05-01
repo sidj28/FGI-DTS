@@ -16,12 +16,14 @@ class DocumentStatus extends Model
   protected $fillable = [
     'shipment_doc_id',
     'status_id',
+    'is_current',
     'changed_at',
     'changed_by',
   ];
 
   protected $casts = [
     'changed_at' => 'datetime',
+    'is_current' => 'boolean',
   ];
 
   public function shipmentDocument()
@@ -37,5 +39,10 @@ class DocumentStatus extends Model
   public function changedByUser()
   {
     return $this->belongsTo(User::class, 'changed_by', 'id');
+  }
+
+  public function scopeCurrent($query)
+  {
+    return $query->where('is_current', true);
   }
 }

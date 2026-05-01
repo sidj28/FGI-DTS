@@ -12,9 +12,10 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('document_statuses', function (Blueprint $table) {
-            $table->increments('doc_status_id');
-            $table->unsignedInteger('shipment_doc_id')->nullable();
-            $table->unsignedInteger('status_id')->nullable();
+            $table->id('doc_status_id');
+            $table->unsignedBigInteger('shipment_doc_id')->nullable();
+            $table->unsignedBigInteger('status_id')->nullable();
+            $table->boolean('is_current')->default(true);
             $table->timestamp('changed_at')->nullable();
             $table->unsignedBigInteger('changed_by')->nullable();
 

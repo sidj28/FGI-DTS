@@ -6,19 +6,23 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
+    /**
+     * Run the migrations.
+     */
     public function up(): void
     {
-        Schema::create('permissions', function (Blueprint $table) {
-            $table->id('permission_id');
-            $table->string('name')->nullable();
-            $table->string('resource')->nullable();
-            $table->string('action')->nullable();
+        Schema::create('shipment_types', function (Blueprint $table) {
+            $table->id('shipment_type_id');
+            $table->string('shipment_type_name');
             $table->timestamps();
         });
     }
 
+    /**
+     * Reverse the migrations.
+     */
     public function down(): void
     {
-        Schema::dropIfExists('permissions');
+        Schema::dropIfExists('shipment_types');
     }
 };
