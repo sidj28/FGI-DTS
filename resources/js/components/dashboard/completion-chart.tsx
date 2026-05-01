@@ -93,7 +93,7 @@ export function CompletionChart() {
     <Card className="py-4 sm:py-0 bg-white dark:bg-slate-900/40 border-slate-200/60 dark:border-slate-800/60 shadow-sm overflow-hidden">
       <CardHeader className="flex flex-col items-stretch border-b border-slate-100 dark:border-slate-800 p-0 sm:flex-row">
         <div className="flex flex-1 flex-col justify-center gap-1 px-6 py-4 sm:py-0">
-          <CardTitle className="text-sm font-bold">Completion Rate</CardTitle>
+          <CardTitle className="text-[12px] font-bold">Completion Rate</CardTitle>
           <CardDescription className="text-[10px]">
             Trends for the last 30 days
           </CardDescription>

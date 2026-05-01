@@ -11,7 +11,7 @@ class Shipment extends Model
 
   protected $table = 'shipments';
   protected $primaryKey = 'shipment_id';
-  public $timestamps = false;
+  public $timestamps = true;
 
   protected $fillable = [
     'year',
@@ -22,7 +22,7 @@ class Shipment extends Model
     'actual_time_of_arrival',
     'broker',
     'brand_manager',
-    'shipment_type',
+    'shipment_type_id',
     'status_id',
     'archived_at',
   ];

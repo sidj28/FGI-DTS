@@ -227,7 +227,7 @@ export default function Dashboard() {
                                 <div className="size-8 rounded-lg bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center text-blue-600 dark:text-blue-400">
                                     <Ship className="size-4" />
                                 </div>
-                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Active Shipments</span>
+                                <span className="text-[12px] font-bold text-slate-400 uppercase tracking-widest">Active Shipments</span>
                             </div>
                             <h4 className="text-2xl font-black text-slate-900 dark:text-white tracking-tighter leading-none mb-1">900</h4>
                             <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">out of 1100</p>
@@ -253,8 +253,8 @@ export default function Dashboard() {
                                 { label: 'Archived Documents', value: stats.archived },
                             ].map((stat, i) => (
                                 <div key={i} className="flex items-center justify-between py-1 border-b border-slate-100 dark:border-slate-800/60 last:border-0 hover:bg-slate-50/50 dark:hover:bg-slate-800/10 transition-colors px-2 rounded">
-                                    <span className="text-xl font-black tracking-tighter text-[#1e293b] dark:text-blue-400">{stat.value}</span>
-                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{stat.label}</span>
+                                    <span className="text-[32px] font-black tracking-tighter text-[#1e293b] dark:text-blue-400">{stat.value}</span>
+                                    <span className="text-[16px] font-bold text-slate-400 uppercase tracking-widest">{stat.label}</span>
                                 </div>
                             ))}
                         </div>
