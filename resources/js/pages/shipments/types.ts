@@ -1,0 +1,52 @@
+export interface DocumentStatusList {
+    status_id: number;
+    status_name: string;
+}
+
+export interface DocumentStatus {
+    doc_status_id: number;
+    is_current: boolean;
+    status: DocumentStatusList;
+}
+
+export interface CustomDoc {
+    custom_doc_id: number;
+    doc_name: string;
+    doc_full_name: string;
+}
+
+export interface ShipmentDocument {
+    shipment_doc_id: number;
+    custom_doc: CustomDoc;
+    current_status: DocumentStatus | null;
+}
+
+export interface ShipmentStatus {
+    status_id: number;
+    status_name: string;
+}
+
+export interface ShipmentType {
+    shipment_type_id: number;
+    shipment_type_name: string;
+}
+
+export interface Shipment {
+    shipment_id: number;
+    shipment_reference: string;
+    brand: string;
+    incoterm: string;
+    actual_time_of_arrival: string | null;
+    broker: string;
+    brand_manager: string;
+    created_at: string | null;
+    archived_at: string | null;
+    status: ShipmentStatus;
+    shipment_type: ShipmentType;
+    documents: ShipmentDocument[];
+}
+
+export interface Props {
+    shipments: Shipment[];
+    shipmentTypes: ShipmentType[];
+}
