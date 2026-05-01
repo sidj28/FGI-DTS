@@ -18,6 +18,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::post('shipments/documents/{shipment_doc_id}/status', [ShipmentController::class, 'updateDocumentStatus'])
         ->name('shipments.documents.status');
+    
+    Route::patch('shipments/{shipment}/archive', [ShipmentController::class, 'archive'])
+    ->name('shipments.archive');
 });
 
 require __DIR__.'/settings.php';

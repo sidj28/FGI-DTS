@@ -1,27 +1,8 @@
-import { Head, router } from '@inertiajs/react';
-import {
-    Search,
-    Calendar,
-    Download,
-    Eye,
-    FileText,
-    Package,
-    Pencil,
-    Printer,
-    Trash2,
-    X,
-    CheckCircle,
-    XCircle,
-    ChevronLeft,
-    ChevronRight,
-    Search as SearchIcon,
-} from 'lucide-react';
-import { type ReactNode, useState, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { cn } from '@/lib/utils';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
+import { Head, router } from '@inertiajs/react';
+import { Calendar, CheckCircle, Download, Eye, FileText, Package, Pencil, Plus, Printer, Trash2, Archive, X, XCircle, Search } from 'lucide-react';
+import { type ReactNode, useState, useMemo } from 'react';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -75,6 +56,7 @@ interface Shipment {
 
 interface Props {
     shipments: Shipment[];
+    shipmentTypes: ShipmentType[];
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -82,6 +64,30 @@ interface Props {
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Shipments', href: '/shipments' },
 ];
+
+const INCOTERMS = [
+    { code: 'EXW', name: 'Ex Works' },
+    { code: 'FCA', name: 'Free Carrier' },
+    { code: 'CPT', name: 'Carriage Paid To' },
+    { code: 'CIP', name: 'Carriage and Insurance Paid To' },
+    { code: 'DAP', name: 'Delivered at Place' },
+    { code: 'DPU', name: 'Delivered at Place Unloaded' },
+    { code: 'DDP', name: 'Delivered Duty Paid' },
+    { code: 'FAS', name: 'Free Alongside Ship' },
+    { code: 'FOB', name: 'Free on Board' },
+    { code: 'CFR', name: 'Cost and Freight' },
+    { code: 'CIF', name: 'Cost, Insurance and Freight' },
+];
+
+const BRAND_MANAGERS = [
+    'Jenevev Dela Cruz',
+    'Jonnel Dimagiba',
+    'Richard Gomez',
+    'Kate Santos',
+];
+
+const incotermName = (code: string) =>
+    INCOTERMS.find((i) => i.code === code)?.name ?? code;
 
 const formatDate = (dateString: string | null) => {
     if (!dateString) return '—';
@@ -92,46 +98,18 @@ const formatDate = (dateString: string | null) => {
     });
 };
 
-const StatusIcon = ({ type, className }: { type: string; className?: string }) => {
-    switch (type.toLowerCase()) {
-        case 'ok':
-        case 'completed':
-        case 'approved':
-            return (
-                <div className={cn("size-5 rounded-full bg-green-50 dark:bg-green-900/20 flex items-center justify-center text-green-500 border border-green-100 dark:border-green-800/30", className)}>
-                    <svg className="size-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                    </svg>
-                </div>
-            );
-        case 'error':
-        case 'failed':
-        case 'rejected':
-            return (
-                <div className={cn("size-5 rounded-full bg-red-50 dark:bg-red-900/20 flex items-center justify-center text-red-500 border border-red-100 dark:border-red-800/30", className)}>
-                    <svg className="size-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                </div>
-            );
-        case 'warning':
-        case 'processing':
-        case 'in progress':
-            return (
-                <div className={cn("size-5 rounded-full bg-amber-50 dark:bg-amber-900/20 flex items-center justify-center text-amber-500 border border-amber-100 dark:border-amber-800/30 border-dashed", className)}>
-                    <div className="size-2.5 rounded-full border-2 border-amber-400 border-dotted animate-spin-slow" />
-                </div>
-            );
-        case 'pending':
-        case 'pending approval':
-            return (
-                <div className={cn("size-5 rounded-full bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center text-blue-500 border border-blue-100 dark:border-blue-800/30", className)}>
-                    <div className="size-3 rounded-full border-2 border-blue-400 border-t-transparent animate-spin" />
-                </div>
-            );
-        default:
-            return <div className={cn("size-5 rounded-full bg-slate-50 dark:bg-slate-800 flex items-center justify-center text-slate-300 border border-slate-100 dark:border-slate-700", className)} />;
-    }
+const toDatetimeLocal = (dateString: string | null) => {
+    if (!dateString) return '';
+    return new Date(dateString).toISOString().slice(0, 16);
+};
+
+const statusIcon = (statusName: string) => {
+    const s = statusName.toLowerCase();
+    if (s === 'processing') return <span className="text-blue-500 text-lg">✳</span>;
+    if (s === 'pending')    return <span className="text-yellow-500 text-lg">◎</span>;
+    if (s === 'completed')  return <span className="text-green-500 text-lg">✔</span>;
+    if (s === 'failed')     return <span className="text-red-500 text-lg">✘</span>;
+    return null;
 };
 
 const isApproved = (doc: ShipmentDocument) =>
@@ -140,32 +118,159 @@ const isApproved = (doc: ShipmentDocument) =>
 const isRejected = (doc: ShipmentDocument) =>
     doc.current_status?.status?.status_name?.toLowerCase() === 'rejected';
 
+// ─── Shared form fields default ───────────────────────────────────────────────
+
+const emptyForm = {
+    shipment_reference:     '',
+    brand:                  '',
+    incoterm:               'EXW',
+    actual_time_of_arrival: '',
+    broker:                 '',
+    brand_manager:          '',
+    shipment_type_id:       '',
+};
+
 // ─── Doc Status Indicator ─────────────────────────────────────────────────────
 
 const DocStatusIndicator = ({ doc }: { doc: ShipmentDocument }) => {
-    const status = doc.current_status?.status?.status_name?.toLowerCase() || 'pending';
-    return <StatusIcon type={status} className="size-4" />;
+    if (isApproved(doc)) return <CheckCircle className="h-4 w-4 text-green-500 flex-shrink-0" />;
+    if (isRejected(doc)) return <XCircle className="h-4 w-4 text-red-400 flex-shrink-0" />;
+    return <span className="h-4 w-4 flex-shrink-0 rounded-full border-2 border-gray-300 inline-block" />;
 };
+
+// ─── Incoterm Select ──────────────────────────────────────────────────────────
+
+const IncotermSelect = ({
+    value,
+    onChange,
+}: {
+    value: string;
+    onChange: (val: string) => void;
+}) => (
+    <select
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="rounded-md border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+    >
+        {INCOTERMS.map((t) => (
+            <option key={t.code} value={t.code}>
+                {t.code} — {t.name}
+            </option>
+        ))}
+    </select>
+);
+
+// ─── Shipment Form Fields ─────────────────────────────────────────────────────
+
+const ShipmentFormFields = ({
+    form,
+    setForm,
+    shipmentTypes,
+}: {
+    form: typeof emptyForm;
+    setForm: (f: typeof emptyForm) => void;
+    shipmentTypes: ShipmentType[];
+}) => (
+    <div className="grid grid-cols-2 gap-4 px-5 py-4">
+        <div className="flex flex-col gap-1">
+            <label className="text-xs font-medium text-gray-600">Shipment Reference</label>
+            <input
+                type="text"
+                value={form.shipment_reference}
+                onChange={(e) => setForm({ ...form, shipment_reference: e.target.value })}
+                className="rounded-md border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                placeholder="e.g. 2025-SKDEVAN-001"
+            />
+        </div>
+
+        <div className="flex flex-col gap-1">
+            <label className="text-xs font-medium text-gray-600">Brand</label>
+            <input
+                type="text"
+                value={form.brand}
+                onChange={(e) => setForm({ ...form, brand: e.target.value })}
+                className="rounded-md border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                placeholder="e.g. Brumate"
+            />
+        </div>
+
+        <div className="flex flex-col gap-1">
+            <label className="text-xs font-medium text-gray-600">Incoterm</label>
+            <IncotermSelect
+                value={form.incoterm}
+                onChange={(val) => setForm({ ...form, incoterm: val })}
+            />
+        </div>
+
+        <div className="flex flex-col gap-1">
+            <label className="text-xs font-medium text-gray-600">Shipment Type</label>
+            <select
+                value={form.shipment_type_id}
+                onChange={(e) => setForm({ ...form, shipment_type_id: e.target.value })}
+                className="rounded-md border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+            >
+                <option value="" disabled>Select type</option>
+                {shipmentTypes.map((t) => (
+                    <option key={t.shipment_type_id} value={t.shipment_type_id}>
+                        {t.shipment_type_name}
+                    </option>
+                ))}
+            </select>
+        </div>
+
+        <div className="flex flex-col gap-1">
+            <label className="text-xs font-medium text-gray-600">Broker</label>
+            <input
+                type="text"
+                value={form.broker}
+                onChange={(e) => setForm({ ...form, broker: e.target.value })}
+                className="rounded-md border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                placeholder="e.g. Grab Philippines"
+            />
+        </div>
+
+        <div className="flex flex-col gap-1">
+            <label className="text-xs font-medium text-gray-600">Brand Manager</label>
+            <select
+                value={form.brand_manager}
+                onChange={(e) => setForm({ ...form, brand_manager: e.target.value })}
+                className="rounded-md border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+            >
+                <option value="" disabled>Select Brand Manager</option>
+                {BRAND_MANAGERS.map((bm) => (
+                    <option key={bm} value={bm}>{bm}</option>
+                ))}
+            </select>
+        </div>
+
+        <div className="col-span-2 flex flex-col gap-1">
+            <label className="text-xs font-medium text-gray-600">Actual Time of Arrival</label>
+            <input
+                type="datetime-local"
+                value={form.actual_time_of_arrival}
+                onChange={(e) => setForm({ ...form, actual_time_of_arrival: e.target.value })}
+                className="rounded-md border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+            />
+        </div>
+    </div>
+);
 
 // ─── Mock Preview ─────────────────────────────────────────────────────────────
 
 const MockDocumentPreview = ({ docName, brand }: { docName: string; brand: string }) => (
-    <div className="flex flex-col gap-3 rounded-xl border border-slate-200/60 dark:border-slate-800/60 bg-white dark:bg-slate-900/40 p-5 shadow-inner text-xs text-slate-700 dark:text-slate-300 font-mono relative overflow-hidden">
-        <div className="absolute top-0 left-0 w-1 h-full bg-blue-500/50" />
-        <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+    <div className="flex flex-col gap-3 rounded-lg border bg-white p-4 shadow-inner text-xs text-gray-700 font-mono">
+        <div className="flex items-center justify-between border-b pb-2">
             <div>
-                <p className="text-sm font-black text-slate-900 dark:text-white tracking-tighter">{brand}</p>
-                <p className="text-[10px] text-slate-400 uppercase font-bold tracking-widest">123 Trade Street, Manila, PH</p>
+                <p className="text-sm font-bold text-gray-900">{brand}</p>
+                <p className="text-gray-400">123 Trade Street, Manila, PH</p>
             </div>
-            <div className="text-right text-[10px] text-slate-400 font-bold tracking-widest uppercase">
+            <div className="text-right text-gray-400">
                 <p>Doc No: MOCK-0042</p>
                 <p>Date: 04/24/26</p>
             </div>
         </div>
-        <p className="text-center text-xs font-black uppercase tracking-[0.2em] text-slate-800 dark:text-slate-200 py-2">
-            {docName}
-        </p>
-        <div className="flex flex-col gap-2">
+        <p className="text-center text-sm font-semibold uppercase tracking-wide text-gray-800">{docName}</p>
+        <div className="flex flex-col gap-2 text-gray-500">
             {[
                 ['Shipper', brand],
                 ['Consignee', 'SK Devan Trading Co.'],
@@ -176,28 +281,183 @@ const MockDocumentPreview = ({ docName, brand }: { docName: string; brand: strin
                 ['Gross Weight', '1,240 KGS'],
                 ['Measurement', '8.5 CBM'],
             ].map(([label, value]) => (
-                <div key={label} className="flex justify-between border-b border-dashed border-slate-100 dark:border-slate-800/40 pb-1.5">
-                    <span className="text-[10px] text-slate-400 uppercase font-bold tracking-widest">{label}</span>
-                    <span className="font-bold text-slate-700 dark:text-slate-300 tracking-tight">{value}</span>
+                <div key={label} className="flex justify-between border-b border-dashed border-gray-100 pb-1">
+                    <span className="text-gray-400">{label}</span>
+                    <span className="font-medium text-gray-700">{value}</span>
                 </div>
             ))}
         </div>
-        <div className="mt-4 border-t border-slate-100 dark:border-slate-800 pt-3 text-slate-300 dark:text-slate-700 text-center text-[9px] font-bold uppercase tracking-[0.3em]">
+        <div className="mt-2 border-t pt-2 text-gray-300 text-center">
             — MOCK PREVIEW — NOT AN OFFICIAL DOCUMENT —
         </div>
     </div>
 );
 
+// ─── Highlight matching text ──────────────────────────────────────────────────
+
+const Highlight = ({ text, query }: { text: string; query: string }) => {
+    if (!query.trim()) return <>{text}</>;
+    const regex = new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+    const parts = text.split(regex);
+    return (
+        <>
+            {parts.map((part, i) =>
+                regex.test(part) ? (
+                    <mark key={i} className="bg-yellow-200 text-yellow-900 rounded-sm px-0.5">
+                        {part}
+                    </mark>
+                ) : (
+                    <span key={i}>{part}</span>
+                )
+            )}
+        </>
+    );
+};
+
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
-export default function Shipments({ shipments }: Props) {
-    const [activeDocPanel, setActiveDocPanel] = useState<number | null>(null);
-    const [selectedDocId, setSelectedDocId] = useState<number | null>(null);
-    const [activeTab, setActiveTab] = useState('All tasks');
-    const [searchQuery, setSearchQuery] = useState('');
+export default function Shipments({ shipments, shipmentTypes }: Props) {
+    const [activeDocPanel, setActiveDocPanel]       = useState<number | null>(null);
+    const [selectedDocId, setSelectedDocId]         = useState<number | null>(null);
+    const [editingShipment, setEditingShipment]     = useState<Shipment | null>(null);
+    const [archivingShipment, setArchivingShipment] = useState<Shipment | null>(null);
+    const [showAddModal, setShowAddModal]           = useState(false);
+    const [searchQuery, setSearchQuery]             = useState('');
+    const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>(null);
 
+    const [editForm, setEditForm] = useState({ ...emptyForm });
+    const [addForm, setAddForm]   = useState({ ...emptyForm });
+
+    // ── Search / filter ───────────────────────────────────────────────────────
+
+    // const filteredShipments = useMemo(() => {
+    //     const q = searchQuery.trim().toLowerCase();
+    //     if (!q) return shipments;
+    //     return shipments.filter((s) =>
+    //         [
+    //             s.shipment_reference,
+    //             s.brand,
+    //             s.incoterm,
+    //             incotermName(s.incoterm),
+    //             s.broker,
+    //             s.brand_manager,
+    //             s.status.status_name,
+    //             s.shipment_type.shipment_type_name,
+    //         ]
+    //             .join(' ')
+    //             .toLowerCase()
+    //             .includes(q)
+    //     );
+    // }, [shipments, searchQuery]);
+
+    // activeDocPanel is an index into `shipments`, keep it stable
     const activeShipment = activeDocPanel !== null ? shipments[activeDocPanel] : null;
-    const selectedDoc = activeShipment?.documents.find(d => d.shipment_doc_id === selectedDocId) ?? null;
+    const selectedDoc    = activeShipment?.documents.find(d => d.shipment_doc_id === selectedDocId) ?? null;
+
+    // ── Search / filter ───────────────────────────────────────────────────────
+    const filteredShipments = useMemo(() => {
+        const q = searchQuery.trim().toLowerCase();
+        let result = shipments;
+        if (q) {
+            result = shipments.filter((s) =>
+                [
+                    s.shipment_reference,
+                    s.brand,
+                    s.incoterm,
+                    incotermName(s.incoterm),
+                    s.broker,
+                    s.brand_manager,
+                    s.status.status_name,
+                    s.shipment_type.shipment_type_name,
+                ]
+                    .join(' ')
+                    .toLowerCase()
+                    .includes(q)
+            );
+        }
+        // Apply sorting
+        if (sortConfig) {
+            result = [...result].sort((a, b) => {
+                let aVal: any;
+                let bVal: any;
+                switch (sortConfig.key) {
+                    case 'shipment_reference':
+                    case 'brand':
+                    case 'broker':
+                    case 'brand_manager':
+                        aVal = a[sortConfig.key];
+                        bVal = b[sortConfig.key];
+                        break;
+                    case 'incoterm':
+                        aVal = incotermName(a.incoterm);
+                        bVal = incotermName(b.incoterm);
+                        break;
+                    case 'actual_time_of_arrival':
+                    case 'created_at':
+                    case 'archived_at':
+                        aVal = a[sortConfig.key] ? new Date(a[sortConfig.key]!).getTime() : 0;
+                        bVal = b[sortConfig.key] ? new Date(b[sortConfig.key]!).getTime() : 0;
+                        break;
+                    case 'status':
+                        aVal = a.status.status_name;
+                        bVal = b.status.status_name;
+                        break;
+                    case 'shipment_type':
+                        aVal = a.shipment_type.shipment_type_name;
+                        bVal = b.shipment_type.shipment_type_name;
+                        break;
+                    default:
+                        aVal = a[sortConfig.key as keyof Shipment];
+                        bVal = b[sortConfig.key as keyof Shipment];
+                }
+                if (aVal === bVal) return 0;
+                if (aVal === null || aVal === undefined) return 1;
+                if (bVal === null || bVal === undefined) return -1;
+                const comparison = aVal < bVal ? -1 : 1;
+                return sortConfig.direction === 'asc' ? comparison : -comparison;
+            });
+        }
+        return result;
+    }, [shipments, searchQuery, sortConfig]);
+
+    // ── Add ──────────────────────────────────────────────────────────────────
+
+    const openAddModal = () => {
+        setAddForm({ ...emptyForm, shipment_type_id: String(shipmentTypes[0]?.shipment_type_id ?? '') });
+        setShowAddModal(true);
+    };
+
+    const closeAddModal = () => setShowAddModal(false);
+
+    const handleAddSubmit = () => {
+        router.post('/shipments', addForm, { onSuccess: closeAddModal });
+    };
+
+    // ── Edit ─────────────────────────────────────────────────────────────────
+
+    const openEditModal = (shipment: Shipment) => {
+        setEditingShipment(shipment);
+        setEditForm({
+            shipment_reference:     shipment.shipment_reference,
+            brand:                  shipment.brand,
+            incoterm:               shipment.incoterm,
+            actual_time_of_arrival: toDatetimeLocal(shipment.actual_time_of_arrival),
+            broker:                 shipment.broker,
+            brand_manager:          shipment.brand_manager,
+            shipment_type_id:       String(shipment.shipment_type.shipment_type_id),
+        });
+    };
+
+    const closeEditModal = () => setEditingShipment(null);
+
+    const handleEditSubmit = () => {
+        if (!editingShipment) return;
+        router.put(`/shipments/${editingShipment.shipment_id}`, editForm, {
+            onSuccess: closeEditModal,
+        });
+    };
+
+    // ── Document status ───────────────────────────────────────────────────────
 
     const handleStatusUpdate = (shipmentDocId: number, statusId: number) => {
         router.post(
@@ -212,304 +472,477 @@ export default function Shipments({ shipments }: Props) {
         setSelectedDocId(null);
     };
 
-    // Prevent background scroll when modal is open
-    useEffect(() => {
-        if (activeDocPanel !== null) {
-            document.body.style.overflow = 'hidden';
-        } else {
-            document.body.style.overflow = 'unset';
-        }
-        return () => { document.body.style.overflow = 'unset'; };
-    }, [activeDocPanel]);
+    const handleSort = (key: string) => {
+        setSortConfig((prev) => {
+            if (prev?.key === key) {
+                if (prev.direction === 'asc') return { key, direction: 'desc' };
+                return null; // remove sort on third click
+            }
+            return { key, direction: 'asc' };
+        });
+    };
 
-    const filteredShipments = shipments.filter(s => {
-        if (searchQuery && !s.shipment_reference.toLowerCase().includes(searchQuery.toLowerCase())) {
-            return false;
-        }
-        if (activeTab !== 'All tasks') {
-            const status = s.status.status_name.toLowerCase();
-            if (activeTab === 'Completed' && status !== 'completed') return false;
-            if (activeTab === 'In Progress' && status !== 'processing') return false;
-            if (activeTab === 'Pending Approval' && status !== 'pending') return false;
-            if (activeTab === 'Incomplete' && status !== 'failed') return false;
-        }
-        return true;
-    });
+    // ── Modal wrapper ─────────────────────────────────────────────────────────
+
+    const ModalShell = ({
+        title,
+        subtitle,
+        onClose,
+        onSubmit,
+        submitLabel,
+        children,
+    }: {
+        title: string;
+        subtitle?: string;
+        onClose: () => void;
+        onSubmit: () => void;
+        submitLabel: string;
+        children: ReactNode;
+    }) => (
+        <div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
+            onClick={onClose}
+        >
+            <div
+                className="w-[520px] rounded-xl border bg-white shadow-2xl overflow-hidden"
+                onClick={(e) => e.stopPropagation()}
+            >
+                <div className="flex items-center justify-between border-b px-5 py-4">
+                    <div>
+                        <p className="text-sm font-semibold">{title}</p>
+                        {subtitle && <p className="text-xs text-muted-foreground">{subtitle}</p>}
+                    </div>
+                    <button onClick={onClose}>
+                        <X className="h-4 w-4 text-gray-400 hover:text-gray-600" />
+                    </button>
+                </div>
+                {children}
+                <div className="flex justify-end gap-2 border-t px-5 py-3 bg-gray-50">
+                    <button
+                        onClick={onClose}
+                        className="rounded-md border px-4 py-2 text-sm hover:bg-muted"
+                    >
+                        Cancel
+                    </button>
+                    <button
+                        onClick={onSubmit}
+                        className="rounded-md bg-primary px-4 py-2 text-sm text-primary-foreground hover:bg-primary/90"
+                    >
+                        {submitLabel}
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
 
     return (
-        <div className="flex min-h-screen flex-col bg-[#F9FAFB] dark:bg-[#030712] p-6 font-sans text-slate-900 dark:text-slate-100">
+        <>
             <Head title="Shipments" />
 
-            {/* Premium Header */}
-            <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            {/* Header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b">
                 <div className="flex items-center gap-3">
-                    <div className="size-10 rounded-xl bg-blue-600 flex items-center justify-center text-white shadow-lg shadow-blue-500/20">
-                        <Package className="h-5 w-5" />
-                    </div>
-                    <div>
-                        <h1 className="text-xl font-black text-slate-900 dark:text-white tracking-tighter">Shipment Details</h1>
-                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Manage and track all logistics</p>
-                    </div>
+                    <Package className="h-6 w-6" />
+                    <h1 className="text-2xl font-semibold">Shipment Details</h1>
                 </div>
-
                 <div className="flex items-center gap-2">
-                    <div className="relative w-64 mr-2">
-                        <SearchIcon className="absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-slate-400" />
-                        <Input
-                            className="bg-white dark:bg-slate-900/40 pl-9 h-8 border-slate-200 dark:border-slate-800 rounded-lg text-[10px]"
-                            placeholder="Search Reference..."
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                        />
-                    </div>
-                    <Button variant="outline" size="sm" className="h-8 text-[10px] font-bold border-slate-200 dark:border-slate-800 rounded-lg gap-2 px-3 bg-white dark:bg-slate-900/50">
-                        <Calendar className="size-3.5" /> Last 30 Days
-                    </Button>
-                    <Button variant="outline" size="sm" className="h-8 text-[10px] font-bold border-slate-200 dark:border-slate-800 rounded-lg gap-2 px-3 bg-white dark:bg-slate-900/50">
-                        <Download className="size-3.5" /> Export
-                    </Button>
+                    <button className="flex items-center gap-2 rounded-full border px-4 py-1.5 text-sm hover:bg-muted">
+                        <Eye className="h-4 w-4" /> View All
+                    </button>
+                    <button className="flex items-center gap-2 rounded-full border px-4 py-1.5 text-sm hover:bg-muted">
+                        <Calendar className="h-4 w-4" /> Last 30 Days
+                    </button>
+                    <button className="flex items-center gap-2 rounded-full border px-4 py-1.5 text-sm hover:bg-muted">
+                        <Download className="h-4 w-4" /> Export
+                    </button>
+                    <button
+                        onClick={openAddModal}
+                        className="flex items-center gap-2 rounded-full bg-primary px-4 py-1.5 text-sm text-primary-foreground hover:bg-primary/90"
+                    >
+                        <Plus className="h-4 w-4" /> Add Shipment
+                    </button>
                 </div>
             </div>
 
-            {/* Compressed Table Area */}
-            <div className="flex flex-col bg-white dark:bg-slate-900/30 rounded-xl border border-slate-200/60 dark:border-slate-800/60 shadow-sm overflow-hidden">
-                <div className="px-4 pt-3 flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-100 dark:border-slate-800">
-                    <div className="flex gap-6">
+            <div className="flex flex-col gap-4 px-6 py-4">
+                {/* Tabs + Search row */}
+                <div className="flex items-end justify-between border-b">
+                    <div className="flex gap-6 text-sm">
                         {['All tasks', 'Completed', 'In Progress', 'Pending Approval', 'Incomplete'].map((tab) => (
                             <button
                                 key={tab}
-                                onClick={() => setActiveTab(tab)}
-                                className={cn(
-                                    "pb-3 text-xs font-bold tracking-tight relative transition-all",
-                                    activeTab === tab ? "text-blue-600 dark:text-blue-400" : "text-slate-400 hover:text-slate-600"
-                                )}
+                                className={`pb-2 ${tab === 'All tasks' ? 'border-b-2 border-primary font-medium' : 'text-muted-foreground'}`}
                             >
                                 {tab}
-                                {activeTab === tab && (
-                                    <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600 dark:bg-blue-500 rounded-full" />
-                                )}
                             </button>
                         ))}
                     </div>
-                    <div className="flex items-center gap-2 -mt-1 mb-2 sm:mb-0">
-                        <div className="flex border-l border-slate-200 dark:border-slate-800 ml-2 pl-2">
-                            <Button variant="ghost" size="icon" className="size-7 text-slate-300"><ChevronLeft className="size-3.5" /></Button>
-                            <Button variant="ghost" size="icon" className="size-7 text-slate-600"><ChevronRight className="size-3.5" /></Button>
-                        </div>
+
+                    {/* Search bar */}
+                    <div className="relative mb-1">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400 pointer-events-none" />
+                        <input
+                            type="text"
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            placeholder="Search reference, brand, broker…"
+                            className="w-72 rounded-md border bg-white pl-8 pr-8 py-1.5 text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
+                        />
+                        {searchQuery && (
+                            <button
+                                onClick={() => setSearchQuery('')}
+                                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                            >
+                                <X className="h-3.5 w-3.5" />
+                            </button>
+                        )}
                     </div>
                 </div>
 
-                <div className="overflow-x-auto">
-                    <table className="w-full border-collapse">
-                        <thead>
-                            <tr className="bg-slate-50/50 dark:bg-slate-800/20 border-b border-slate-100 dark:border-slate-800">
-                                <th className="px-6 py-3 text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 text-left">SR#</th>
-                                <th className="px-6 py-3 text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 text-left">Brand</th>
-                                <th className="px-6 py-3 text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 text-left">Incoterm</th>
-                                <th className="px-6 py-3 text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 text-left">ATA</th>
-                                <th className="px-6 py-3 text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 text-left">Broker</th>
-                                <th className="px-6 py-3 text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 text-left">BM</th>
-                                <th className="px-6 py-3 text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 text-center">Status</th>
-                                <th className="px-6 py-3 text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 text-center">Documents</th>
-                                <th className="px-6 py-3 text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 text-right">Actions</th>
+                {/* Table */}
+                <div className="rounded-lg border overflow-x-auto">
+                    <table className="w-full text-sm">
+                        <thead className="bg-muted/50 text-left">
+                            <tr>
+                                <th className="px-4 py-3">Select</th>
+                                <th className="px-4 py-3 cursor-pointer select-none" onClick={() => handleSort('shipment_reference')}>
+                                    <div className="flex items-center gap-1 whitespace-nowrap">
+                                        SR#
+                                        {sortConfig?.key === 'shipment_reference' && (
+                                            <span>{sortConfig.direction === 'asc' ? '↑' : '↓'}</span>
+                                        )}
+                                    </div>
+                                </th>
+                                <th className="px-4 py-3 cursor-pointer select-none" onClick={() => handleSort('brand')}>
+                                    <div className="flex items-center gap-1 whitespace-nowrap">
+                                        Brand
+                                        {sortConfig?.key === 'brand' && (
+                                            <span>{sortConfig.direction === 'asc' ? '↑' : '↓'}</span>
+                                        )}
+                                    </div>
+                                </th>
+                                <th className="px-4 py-3 cursor-pointer select-none" onClick={() => handleSort('incoterm')}>
+                                    <div className="flex items-center gap-1 whitespace-nowrap">
+                                        Incoterm
+                                        {sortConfig?.key === 'incoterm' && (
+                                            <span>{sortConfig.direction === 'asc' ? '↑' : '↓'}</span>
+                                        )}
+                                    </div>
+                                </th>
+                                <th className="px-4 py-3 cursor-pointer select-none" onClick={() => handleSort('actual_time_of_arrival')}>
+                                    <div className="flex items-center gap-1 whitespace-nowrap">
+                                        ATA
+                                        {sortConfig?.key === 'actual_time_of_arrival' && (
+                                            <span>{sortConfig.direction === 'asc' ? '↑' : '↓'}</span>
+                                        )}
+                                    </div>
+                                </th>
+                                <th className="px-4 py-3 cursor-pointer select-none" onClick={() => handleSort('broker')}>
+                                    <div className="flex items-center gap-1 whitespace-nowrap">
+                                        Broker
+                                        {sortConfig?.key === 'broker' && (
+                                            <span>{sortConfig.direction === 'asc' ? '↑' : '↓'}</span>
+                                        )}
+                                    </div>
+                                </th>
+                                <th className="px-4 py-3 cursor-pointer select-none" onClick={() => handleSort('brand_manager')}>
+                                    <div className="flex items-center gap-1 whitespace-nowrap">
+                                        BM
+                                        {sortConfig?.key === 'brand_manager' && (
+                                            <span>{sortConfig.direction === 'asc' ? '↑' : '↓'}</span>
+                                        )}
+                                    </div>
+                                </th>
+                                <th className="px-4 py-3 cursor-pointer select-none" onClick={() => handleSort('status')}>
+                                    <div className="flex items-center gap-1 whitespace-nowrap">
+                                        Status
+                                        {sortConfig?.key === 'status' && (
+                                            <span>{sortConfig.direction === 'asc' ? '↑' : '↓'}</span>
+                                        )}
+                                    </div>
+                                </th>
+                                <th className="px-4 py-3 cursor-pointer select-none" onClick={() => handleSort('created_at')}>
+                                    <div className="flex items-center gap-1 whitespace-nowrap">
+                                        Created
+                                        {sortConfig?.key === 'created_at' && (
+                                            <span>{sortConfig.direction === 'asc' ? '↑' : '↓'}</span>
+                                        )}
+                                    </div>
+                                </th>
+                                <th className="px-4 py-3 cursor-pointer select-none" onClick={() => handleSort('archived_at')}>
+                                    <div className="flex items-center gap-1 whitespace-nowrap">
+                                        Archived
+                                        {sortConfig?.key === 'archived_at' && (
+                                            <span>{sortConfig.direction === 'asc' ? '↑' : '↓'}</span>
+                                        )}
+                                    </div>
+                                </th>
+                                <th className="px-4 py-3">Documents</th>
+                                <th className="px-4 py-3">Actions</th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-slate-50 dark:divide-slate-800/50">
-                            {filteredShipments.map((s, index) => {
-                                const approvedCount = s.documents.filter(isApproved).length;
-                                const totalCount = s.documents.length;
+                        <tbody>
+                            {filteredShipments.length === 0 ? (
+                                <tr>
+                                    <td colSpan={12} className="px-4 py-10 text-center text-sm text-muted-foreground">
+                                        No shipments match <span className="font-medium text-gray-700">"{searchQuery}"</span>
+                                    </td>
+                                </tr>
+                            ) : (
+                                filteredShipments.map((s) => {
+                                    // find original index for the doc panel (panel uses shipments[], not filtered)
+                                    const originalIndex = shipments.indexOf(s);
+                                    const approvedCount = s.documents.filter(isApproved).length;
+                                    const totalCount    = s.documents.length;
 
-                                return (
-                                    <tr key={s.shipment_id} className="border-b border-slate-50 dark:border-slate-800/40 last:border-0 hover:bg-slate-50/50 dark:hover:bg-slate-800/10 transition-colors group">
-                                        <td className="px-6 py-3 text-xs font-black text-blue-900 dark:text-blue-300 tracking-tighter">{s.shipment_reference}</td>
-                                        <td className="px-6 py-3 text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-tight">{s.brand}</td>
-                                        <td className="px-6 py-3 text-[11px] font-bold text-slate-500">{s.incoterm}</td>
-                                        <td className="px-6 py-3 text-[11px] font-bold text-slate-400 group-hover:text-slate-600 transition-colors">{formatDate(s.actual_time_of_arrival)}</td>
-                                        <td className="px-6 py-3 text-[11px] font-bold text-slate-500">{s.broker}</td>
-                                        <td className="px-6 py-3 text-[11px] font-bold text-slate-500">{s.brand_manager}</td>
-                                        <td className="px-6 py-3">
-                                            <div className="flex justify-center">
-                                                <StatusIcon type={s.status.status_name} />
-                                            </div>
-                                        </td>
-                                        <td className="px-6 py-3">
-                                            <div className="flex items-center justify-center gap-2">
-                                                <span className={cn(
-                                                    "text-[10px] font-black tracking-tighter",
-                                                    approvedCount === totalCount && totalCount > 0 ? "text-green-600 dark:text-green-400" : "text-amber-600 dark:text-amber-400"
-                                                )}>
-                                                    {approvedCount}/{totalCount}
-                                                </span>
-                                                <Button
-                                                    variant="ghost"
-                                                    size="icon"
-                                                    onClick={() => { setActiveDocPanel(index); setSelectedDocId(null); }}
-                                                    className="size-7 text-slate-300 hover:text-purple-600 hover:bg-purple-50 dark:hover:bg-purple-900/20"
+                                    return (
+                                        <tr key={s.shipment_id} className="border-t hover:bg-muted/30">
+                                            <td className="px-4 py-3">
+                                                <input type="checkbox" className="h-4 w-4 rounded border" />
+                                            </td>
+                                            <td className="px-4 py-3 font-mono text-xs">
+                                                <Highlight text={s.shipment_reference} query={searchQuery} />
+                                            </td>
+                                            <td className="px-4 py-3">
+                                                <Highlight text={s.brand} query={searchQuery} />
+                                            </td>
+
+                                            {/* Incoterm with tooltip */}
+                                            <td className="px-4 py-3">
+                                                <span
+                                                    title={incotermName(s.incoterm)}
+                                                    className="cursor-help underline decoration-dotted decoration-gray-400 underline-offset-2"
                                                 >
-                                                    <Eye className="h-3.5 w-3.5" />
-                                                </Button>
-                                            </div>
-                                        </td>
-                                        <td className="px-6 py-3 text-right">
-                                            <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                <Button variant="ghost" size="icon" className="size-8 text-slate-300 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20">
-                                                    <Printer className="size-3.5" />
-                                                </Button>
-                                                <Button variant="ghost" size="icon" className="size-8 text-slate-300 hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/20">
-                                                    <Pencil className="size-3.5" />
-                                                </Button>
-                                                <Button variant="ghost" size="icon" className="size-8 text-slate-300 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20">
-                                                    <Trash2 className="size-3.5" />
-                                                </Button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                );
-                            })}
+                                                    <Highlight text={s.incoterm} query={searchQuery} />
+                                                </span>
+                                            </td>
+
+                                            <td className="px-4 py-3">{formatDate(s.actual_time_of_arrival)}</td>
+                                            <td className="px-4 py-3">
+                                                <Highlight text={s.broker} query={searchQuery} />
+                                            </td>
+                                            <td className="px-4 py-3">
+                                                <Highlight text={s.brand_manager} query={searchQuery} />
+                                            </td>
+                                            <td className="px-4 py-3 text-center">{statusIcon(s.status.status_name)}</td>
+                                            <td className="px-4 py-3">{formatDate(s.created_at)}</td>
+                                            <td className="px-4 py-3">{formatDate(s.archived_at)}</td>
+
+                                            {/* Documents */}
+                                            <td className="px-4 py-3">
+                                                <div className="flex items-center gap-2">
+                                                    <span className={`text-xs font-medium ${approvedCount === totalCount && totalCount > 0 ? 'text-green-600' : 'text-yellow-600'}`}>
+                                                        {approvedCount}/{totalCount}
+                                                    </span>
+                                                    <button
+                                                        onClick={() => { setActiveDocPanel(originalIndex); setSelectedDocId(null); }}
+                                                        className="flex items-center gap-1 rounded-md border border-purple-500 px-2 py-1 text-xs text-purple-600 hover:bg-purple-50"
+                                                    >
+                                                        <Eye className="h-3 w-3" /> View
+                                                    </button>
+                                                </div>
+                                            </td>
+
+                                            {/* Actions */}
+                                            <td className="px-4 py-3">
+                                                <div className="flex items-center gap-1">
+                                                    <button className="flex items-center gap-1 rounded-md border border-blue-500 px-2 py-1 text-xs text-blue-600 hover:bg-blue-50">
+                                                        <Printer className="h-3 w-3" /> Print
+                                                    </button>
+                                                    <button
+                                                        onClick={() => openEditModal(s)}
+                                                        className="flex items-center gap-1 rounded-md border border-yellow-500 px-2 py-1 text-xs text-yellow-600 hover:bg-yellow-50"
+                                                    >
+                                                        <Pencil className="h-3 w-3" /> Edit
+                                                    </button>
+                                                    <button
+                                                        onClick={() => setArchivingShipment(s)}
+                                                        disabled={!!s.archived_at}
+                                                        className="flex items-center gap-1 rounded-md border border-orange-500 px-2 py-1 text-xs text-orange-600 hover:bg-orange-50 disabled:opacity-40 disabled:cursor-not-allowed"
+                                                    >
+                                                        <Archive className="h-3 w-3" /> {s.archived_at ? 'Archived' : 'Archive'}
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    );
+                                })
+                            )}
                         </tbody>
                     </table>
                 </div>
 
-                <div className="px-6 py-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between bg-slate-50/30 dark:bg-slate-900/20">
-                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                        Total Shipments: <span className="text-slate-900 dark:text-white font-black">{shipments.length}</span>
+                {/* Footer */}
+                <div className="flex items-center justify-between text-sm text-muted-foreground">
+                    <span>
+                        <strong className="text-foreground">Total Shipments:</strong>{' '}
+                        {filteredShipments.length}
+                        {searchQuery && filteredShipments.length !== shipments.length && (
+                            <span className="ml-1 text-xs">
+                                (filtered from {shipments.length})
+                            </span>
+                        )}
                     </span>
                 </div>
             </div>
 
-            {/* Document Dialog — Premium Glassmorphic */}
+            {/* ── Add Modal ────────────────────────────────────────────────── */}
+            {showAddModal && (
+                <ModalShell
+                    title="Add Shipment"
+                    onClose={closeAddModal}
+                    onSubmit={handleAddSubmit}
+                    submitLabel="Create Shipment"
+                >
+                    <ShipmentFormFields
+                        form={addForm}
+                        setForm={setAddForm}
+                        shipmentTypes={shipmentTypes}
+                    />
+                </ModalShell>
+            )}
+
+            {/* ── Edit Modal ───────────────────────────────────────────────── */}
+            {editingShipment !== null && (
+                <ModalShell
+                    title="Edit Shipment"
+                    subtitle={editingShipment.shipment_reference}
+                    onClose={closeEditModal}
+                    onSubmit={handleEditSubmit}
+                    submitLabel="Save Changes"
+                >
+                    <ShipmentFormFields
+                        form={editForm}
+                        setForm={setEditForm}
+                        shipmentTypes={shipmentTypes}
+                    />
+                </ModalShell>
+            )}
+
+            {archivingShipment !== null && (
+                <ModalShell
+                    title="Archive Shipment"
+                    subtitle={`Confirm archive for ${archivingShipment.shipment_reference}`}
+                    onClose={() => setArchivingShipment(null)}
+                    onSubmit={() => {
+                        router.patch(`/shipments/${archivingShipment.shipment_id}/archive`, undefined, {
+                            onSuccess: () => setArchivingShipment(null),
+                        });
+                    }}
+                    submitLabel="Archive"
+                >
+                    <div className="px-5 py-4 text-sm text-gray-600">
+                        Are you sure you want to archive this shipment? This action can be reverted later.
+                    </div>
+                </ModalShell>
+            )}
+
+            {/* ── Document Dialog ──────────────────────────────────────────── */}
             {activeShipment !== null && (
                 <div
-                    className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/20 backdrop-blur-sm animate-in fade-in duration-200"
+                    className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
                     onClick={closePanel}
                 >
                     <div
-                        className="flex h-[600px] w-[850px] rounded-2xl border border-slate-200/60 dark:border-slate-800/60 bg-white/90 dark:bg-slate-950/90 shadow-2xl overflow-hidden backdrop-blur-xl animate-in zoom-in-95 duration-200"
+                        className="flex h-[560px] w-[760px] rounded-xl border bg-white shadow-2xl overflow-hidden"
                         onClick={(e) => e.stopPropagation()}
                     >
                         {/* Left — Document List */}
-                        <div className="flex w-64 flex-shrink-0 flex-col border-r border-slate-100 dark:border-slate-800/60 bg-slate-50/30 dark:bg-slate-900/20">
-                            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800/60 px-5 py-4">
+                        <div className="flex w-56 flex-shrink-0 flex-col border-r">
+                            <div className="flex items-center justify-between border-b px-4 py-3">
                                 <div>
-                                    <p className="text-xs font-black text-slate-900 dark:text-white tracking-tighter">DOCUMENTS</p>
-                                    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest truncate max-w-[140px]">{activeShipment.brand}</p>
+                                    <p className="text-sm font-semibold">Documents</p>
+                                    <p className="text-xs text-muted-foreground">{activeShipment.brand}</p>
                                 </div>
-                                <Button variant="ghost" size="icon" className="size-7 text-slate-400" onClick={closePanel}>
-                                    <X className="h-4 w-4" />
-                                </Button>
+                                <button onClick={closePanel}>
+                                    <X className="h-4 w-4 text-gray-400 hover:text-gray-600" />
+                                </button>
                             </div>
 
-                            <ul className="flex flex-col gap-1 overflow-y-auto p-3 flex-1 custom-scrollbar">
+                            <ul className="flex flex-col gap-1 overflow-y-auto p-3 flex-1">
                                 {activeShipment.documents.map((doc) => {
-                                    const fullName = doc.custom_doc.doc_full_name;
+                                    const fullName   = doc.custom_doc.doc_full_name;
                                     const isSelected = selectedDocId === doc.shipment_doc_id;
 
                                     return (
                                         <li
                                             key={doc.shipment_doc_id}
                                             onClick={() => setSelectedDocId(doc.shipment_doc_id)}
-                                            className={cn(
-                                                "flex cursor-pointer items-center gap-3 rounded-xl px-3 py-2.5 transition-all duration-200 group relative",
-                                                isSelected
-                                                    ? "bg-white dark:bg-slate-800 shadow-sm border border-slate-200/60 dark:border-slate-700/60"
-                                                    : "hover:bg-white/50 dark:hover:bg-slate-800/50"
-                                            )}
+                                            className={`flex cursor-pointer items-center gap-2 rounded-md px-2 py-2 text-sm transition-colors ${
+                                                isSelected ? 'bg-purple-50 text-purple-700' : 'hover:bg-muted/50'
+                                            }`}
                                         >
                                             <DocStatusIndicator doc={doc} />
-                                            <div className="flex flex-col min-w-0">
-                                                <span className={cn(
-                                                    "text-[10px] font-bold leading-tight truncate transition-colors",
-                                                    isSelected ? "text-slate-900 dark:text-white" : "text-slate-500 group-hover:text-slate-700 dark:group-hover:text-slate-300"
-                                                )}>
-                                                    {fullName}
-                                                </span>
-                                            </div>
-                                            {isSelected && <div className="absolute right-0 top-1/2 -translate-y-1/2 w-1 h-4 bg-blue-500 rounded-l-full" />}
+                                            <FileText className={`h-3.5 w-3.5 flex-shrink-0 ${isApproved(doc) ? 'text-green-500' : isRejected(doc) ? 'text-red-400' : 'text-gray-300'}`} />
+                                            <span className={`text-xs leading-tight ${isApproved(doc) ? 'text-gray-800' : isRejected(doc) ? 'text-red-400' : 'text-gray-400'}`}>
+                                                {fullName}
+                                            </span>
                                         </li>
                                     );
                                 })}
                             </ul>
 
-                            <div className="border-t border-slate-100 dark:border-slate-800/60 px-5 py-4 bg-white/50 dark:bg-slate-900/40">
-                                <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] mb-3">
-                                    {activeShipment.documents.filter(isApproved).length} / {activeShipment.documents.length} APPROVED
-                                </p>
-                                <Button
+                            <div className="border-t px-4 py-3 flex items-center justify-between">
+                                <span className="text-xs text-muted-foreground">
+                                    {activeShipment.documents.filter(isApproved).length} of {activeShipment.documents.length} approved
+                                </span>
+                                <button
                                     onClick={closePanel}
-                                    className="w-full h-8 text-[10px] font-black uppercase tracking-widest bg-slate-900 dark:bg-white text-white dark:text-slate-900 hover:opacity-90 transition-opacity"
+                                    className="rounded-md bg-primary px-3 py-1.5 text-xs text-primary-foreground hover:bg-primary/90"
                                 >
-                                    Close Portal
-                                </Button>
+                                    Close
+                                </button>
                             </div>
                         </div>
 
                         {/* Right — Preview + Actions */}
-                        <div className="flex flex-1 flex-col bg-white dark:bg-slate-950">
-                            <div className="border-b border-slate-100 dark:border-slate-800/60 px-6 py-4 flex items-center justify-between">
-                                <div>
-                                    <h3 className="text-sm font-black text-slate-900 dark:text-white tracking-tighter">
-                                        {selectedDoc ? selectedDoc.custom_doc.doc_full_name : 'PREVIEW PORTAL'}
-                                    </h3>
-                                    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Digital Document Verification</p>
-                                </div>
-                                {selectedDoc && (
-                                    <div className="flex items-center gap-2">
-                                        <Button variant="outline" size="sm" className="h-7 text-[9px] font-bold uppercase tracking-widest border-slate-200 dark:border-slate-800">
-                                            <Printer className="size-3 mr-1" /> Print
-                                        </Button>
-                                    </div>
-                                )}
+                        <div className="flex flex-1 flex-col">
+                            <div className="border-b px-4 py-3">
+                                <p className="text-sm font-semibold text-gray-700">
+                                    {selectedDoc ? selectedDoc.custom_doc.doc_full_name : 'Select a document to preview'}
+                                </p>
                             </div>
 
-                            <div className="flex-1 overflow-y-auto p-8 bg-slate-50/50 dark:bg-slate-900/20 custom-scrollbar">
+                            <div className="flex-1 overflow-y-auto p-4">
                                 {selectedDoc ? (
-                                    <div className="max-w-2xl mx-auto">
-                                        <MockDocumentPreview
-                                            docName={selectedDoc.custom_doc.doc_full_name}
-                                            brand={activeShipment.brand}
-                                        />
-                                    </div>
+                                    <MockDocumentPreview
+                                        docName={selectedDoc.custom_doc.doc_full_name}
+                                        brand={activeShipment.brand}
+                                    />
                                 ) : (
-                                    <div className="flex h-full flex-col items-center justify-center gap-4 text-slate-200 dark:text-slate-800">
-                                        <div className="size-20 rounded-full border-2 border-dashed border-current flex items-center justify-center">
-                                            <FileText className="size-10" />
-                                        </div>
-                                        <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">Select Document to Initialize</p>
+                                    <div className="flex h-full flex-col items-center justify-center gap-3 text-gray-300">
+                                        <FileText className="h-16 w-16" />
+                                        <p className="text-sm">Click a document on the left to preview</p>
                                     </div>
                                 )}
                             </div>
 
-                            {/* Approve / Reject Actions */}
+                            {/* Approve / Reject */}
                             {selectedDoc && (
-                                <div className="border-t border-slate-100 dark:border-slate-800/60 px-6 py-5 flex items-center justify-between bg-white dark:bg-slate-950">
-                                    <div className="flex flex-col">
-                                        <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">Status Protocol</span>
-                                        <div className="flex items-center gap-2">
-                                            <StatusIcon type={selectedDoc.current_status?.status.status_name || 'pending'} className="size-3.5" />
-                                            <span className={cn(
-                                                "text-[10px] font-black uppercase tracking-tight",
-                                                isApproved(selectedDoc) ? "text-green-600" : isRejected(selectedDoc) ? "text-red-500" : "text-amber-500"
-                                            )}>
-                                                {selectedDoc.current_status?.status.status_name || 'Awaiting Review'}
-                                            </span>
-                                        </div>
+                                <div className="border-t px-4 py-3 flex items-center justify-between bg-gray-50">
+                                    <div className="text-xs text-muted-foreground">
+                                        {selectedDoc.current_status
+                                            ? <>Current: <span className={`font-medium ${isApproved(selectedDoc) ? 'text-green-600' : isRejected(selectedDoc) ? 'text-red-500' : 'text-yellow-600'}`}>
+                                                {selectedDoc.current_status.status.status_name}
+                                              </span></>
+                                            : 'No status yet'
+                                        }
                                     </div>
-                                    <div className="flex gap-3">
-                                        <Button
+                                    <div className="flex gap-2">
+                                        <button
                                             disabled={isApproved(selectedDoc)}
                                             onClick={() => handleStatusUpdate(selectedDoc.shipment_doc_id, 1)}
-                                            className="h-10 px-6 bg-green-500 hover:bg-green-600 text-white border-0 shadow-lg shadow-green-500/20 text-[10px] font-black uppercase tracking-widest transition-all disabled:opacity-30"
+                                            className="flex items-center gap-1 rounded-md border border-green-500 px-3 py-1.5 text-xs text-green-600 hover:bg-green-50 disabled:opacity-40 disabled:cursor-not-allowed"
                                         >
-                                            Approve Document
-                                        </Button>
-                                        <Button
+                                            <CheckCircle className="h-3.5 w-3.5" /> Approve
+                                        </button>
+                                        <button
                                             disabled={isRejected(selectedDoc)}
                                             onClick={() => handleStatusUpdate(selectedDoc.shipment_doc_id, 3)}
-                                            variant="outline"
-                                            className="h-10 px-6 border-red-200 dark:border-red-900/30 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/10 text-[10px] font-black uppercase tracking-widest transition-all disabled:opacity-30"
+                                            className="flex items-center gap-1 rounded-md border border-red-500 px-3 py-1.5 text-xs text-red-600 hover:bg-red-50 disabled:opacity-40 disabled:cursor-not-allowed"
                                         >
-                                            Reject
-                                        </Button>
+                                            <XCircle className="h-3.5 w-3.5" /> Reject
+                                        </button>
                                     </div>
                                 </div>
                             )}
@@ -517,7 +950,7 @@ export default function Shipments({ shipments }: Props) {
                     </div>
                 </div>
             )}
-        </div>
+        </>
     );
 }
 
