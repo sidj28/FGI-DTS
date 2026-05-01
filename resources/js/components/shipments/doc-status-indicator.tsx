@@ -1,5 +1,5 @@
-import { type ShipmentDocument } from '../types';
-import { StatusIcon } from './StatusIcon';
+import { type ShipmentDocument } from '@/pages/shipments/types';
+import { StatusIcon } from './status-icon';
 
 export const DocStatusIndicator = ({ doc }: { doc: ShipmentDocument }) => {
     const status = doc.current_status?.status?.status_name?.toLowerCase() || '';

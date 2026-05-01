@@ -1,9 +1,9 @@
 import { CheckCircle, FileText, X, XCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { type Shipment, type ShipmentDocument } from '../types';
-import { isApproved, isRejected } from '../helpers';
-import { DocStatusIndicator } from './DocStatusIndicator';
-import { MockDocumentPreview } from './MockDocumentPreview';
+import { type Shipment, type ShipmentDocument } from '@/pages/shipments/types';
+import { isApproved, isRejected } from '@/pages/shipments/helpers';
+import { DocStatusIndicator } from './doc-status-indicator';
+import { MockDocumentPreview } from './mock-document-preview';
 
 interface DocumentDialogProps {
     activeShipment: Shipment;

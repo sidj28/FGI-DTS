@@ -1,9 +1,9 @@
 import { Archive, Eye, Pencil, Printer, Search, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { type Shipment, type ShipmentType } from '../types';
-import { formatDate, incotermName } from '../helpers';
-import { StatusIcon } from './StatusIcon';
-import { Highlight } from './Highlight';
+import { type Shipment, type ShipmentType } from '@/pages/shipments/types';
+import { formatDate, incotermName } from '@/pages/shipments/helpers';
+import { StatusIcon } from './status-icon';
+import { Highlight } from './highlight';
 
 interface SortConfig {
     key: string;

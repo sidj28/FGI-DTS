@@ -1,4 +1,4 @@
-import { INCOTERMS } from '../constants';
+import { INCOTERMS } from '@/pages/shipments/constants';
 
 export const IncotermSelect = ({
     value,

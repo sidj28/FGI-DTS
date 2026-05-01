@@ -23,7 +23,7 @@ import { AccuracyChart } from '@/components/dashboard/accuracy-chart';
 import { CompletionChart } from '@/components/dashboard/completion-chart';
 import { DatePickerWithRange } from '@/components/ui/date-range-picker';
 import { ShipmentsTable } from '@/components/dashboard/shipments-table';
-import { StatusIcon } from '@/pages/shipments/components/StatusIcon';
+import { StatusIcon } from '@/components/shipments/status-icon';
 
 const MockDocumentPreview = ({ docName, brand }: { docName: string; brand: string }) => (
     <div className="flex flex-col gap-3 rounded-xl border border-slate-200/60 dark:border-slate-800/60 bg-white dark:bg-slate-900/40 p-5 shadow-inner text-xs text-slate-700 dark:text-slate-300 font-mono relative overflow-hidden">
