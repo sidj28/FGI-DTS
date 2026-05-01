@@ -9,6 +9,9 @@ import {
     ChevronRight,
     ChevronsLeft,
     ChevronsRight,
+    X,
+    FileText,
+    Printer,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -20,17 +23,68 @@ import { AccuracyChart } from '@/components/dashboard/accuracy-chart';
 import { CompletionChart } from '@/components/dashboard/completion-chart';
 import { DatePickerWithRange } from '@/components/ui/date-range-picker';
 
+const MockDocumentPreview = ({ docName, brand }: { docName: string; brand: string }) => (
+    <div className="flex flex-col gap-3 rounded-xl border border-slate-200/60 dark:border-slate-800/60 bg-white dark:bg-slate-900/40 p-5 shadow-inner text-xs text-slate-700 dark:text-slate-300 font-mono relative overflow-hidden">
+        <div className="absolute top-0 left-0 w-1 h-full bg-blue-500/50" />
+        <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+            <div>
+                <p className="text-sm font-black text-slate-900 dark:text-white tracking-tighter">{brand}</p>
+                <p className="text-[10px] text-slate-400 uppercase font-bold tracking-widest">123 Trade Street, Manila, PH</p>
+            </div>
+            <div className="text-right text-[10px] text-slate-400 font-bold tracking-widest uppercase">
+                <p>Doc No: MOCK-0042</p>
+                <p>Date: 04/24/26</p>
+            </div>
+        </div>
+        <p className="text-center text-xs font-black uppercase tracking-[0.2em] text-slate-800 dark:text-slate-200 py-2">
+            {docName}
+        </p>
+        <div className="flex flex-col gap-2">
+            {[
+                ['Shipper', brand],
+                ['Consignee', 'SK Devan Trading Co.'],
+                ['Port of Loading', 'Shanghai, CN'],
+                ['Port of Discharge', 'Manila, PH'],
+                ['Vessel / Flight', 'MV ORIENT STAR 12'],
+                ['B/L Number', 'BL-2025-00408'],
+                ['Gross Weight', '1,240 KGS'],
+                ['Measurement', '8.5 CBM'],
+            ].map(([label, value]) => (
+                <div key={label} className="flex justify-between border-b border-dashed border-slate-100 dark:border-slate-800/40 pb-1.5">
+                    <span className="text-[10px] text-slate-400 uppercase font-bold tracking-widest">{label}</span>
+                    <span className="font-bold text-slate-700 dark:text-slate-300 tracking-tight">{value}</span>
+                </div>
+            ))}
+        </div>
+        <div className="mt-4 border-t border-slate-100 dark:border-slate-800 pt-3 text-slate-300 dark:text-slate-700 text-center text-[9px] font-bold uppercase tracking-[0.3em]">
+            — MOCK PREVIEW — NOT AN OFFICIAL DOCUMENT —
+        </div>
+    </div>
+);
+
 export default function Dashboard() {
     const [activeTab, setActiveTab] = useState('All tasks');
     const [dateRange, setDateRange] = useState<{ from?: Date, to?: Date } | undefined>();
     const [searchQuery, setSearchQuery] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
+    const [activeShipmentIndex, setActiveShipmentIndex] = useState<number | null>(null);
+    const [selectedDocKey, setSelectedDocKey] = useState<string | null>(null);
     const itemsPerPage = 20;
 
     // Reset to page 1 when filters change
     useEffect(() => {
         setCurrentPage(1);
     }, [activeTab, dateRange, searchQuery]);
+
+    // Prevent background scroll when modal is open
+    useEffect(() => {
+        if (activeShipmentIndex !== null) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = 'unset';
+        }
+        return () => { document.body.style.overflow = 'unset'; };
+    }, [activeShipmentIndex]);
 
     const stats = {
         active: 579,
@@ -55,28 +109,40 @@ export default function Dashboard() {
     ];
 
     const shipments = Array.from({ length: 100 }).map((_, i) => {
-        const statuses: ('completed' | 'pending' | 'warning' | 'error')[] = ['completed', 'pending', 'warning', 'error'];
-        const status = statuses[i % 4];
         const date = new Date(2026, Math.floor(i / 33), (i % 28) + 1).toISOString().split('T')[0];
+        
+        const docs = {
+            sh: i % 10 === 0 ? 'error' : 'ok',
+            ssdt: i % 15 === 0 ? 'pending' : 'ok',
+            fan: i % 8 === 0 ? 'warning' : 'ok',
+            tan: 'ok',
+            sad: 'ok',
+            bl: i % 12 === 0 ? 'pending' : 'ok',
+            fe: 'ok',
+            iv: 'ok',
+            pl: 'ok',
+            ci: 'ok',
+            dh: i % 20 === 0 ? 'warning' : 'ok',
+        };
+
+        // Derive status from docs
+        const docStatuses = Object.values(docs);
+        let status: 'completed' | 'pending' | 'warning' | 'error' = 'completed';
+        
+        if (docStatuses.includes('error')) {
+            status = 'error';
+        } else if (docStatuses.includes('warning')) {
+            status = 'warning';
+        } else if (docStatuses.includes('pending')) {
+            status = 'pending';
+        }
 
         return {
             date,
             ref: `2025-SKDEVAN-${408 + i}`,
             incoterm: ['EXW', 'FOB', 'CIF', 'DDP', 'FCA'][i % 5],
             status,
-            docs: {
-                sh: i % 10 === 0 ? 'error' : 'ok',
-                ssdt: i % 15 === 0 ? 'pending' : 'ok',
-                fan: i % 8 === 0 ? 'warning' : 'ok',
-                tan: 'ok',
-                sad: 'ok',
-                bl: i % 12 === 0 ? 'pending' : 'ok',
-                fe: 'ok',
-                iv: 'ok',
-                pl: 'ok',
-                ci: 'ok',
-                dh: i % 20 === 0 ? 'warning' : 'ok',
-            }
+            docs
         };
     });
 
@@ -112,12 +178,13 @@ export default function Dashboard() {
     );
 
     const StatusIcon = ({ type }: { type: string }) => {
-        switch (type) {
+        switch (type.toLowerCase()) {
             case 'ok':
             case 'completed': return <div className="size-5 rounded-full bg-green-50 dark:bg-green-900/20 flex items-center justify-center text-green-500 border border-green-100 dark:border-green-800/30"><svg className="size-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg></div>;
             case 'error': return <div className="size-5 rounded-full bg-red-50 dark:bg-red-900/20 flex items-center justify-center text-red-500 border border-red-100 dark:border-red-800/30"><svg className="size-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg></div>;
             case 'warning': return <div className="size-5 rounded-full bg-amber-50 dark:bg-amber-900/20 flex items-center justify-center text-amber-500 border border-amber-100 dark:border-amber-800/30 border-dashed"><div className="size-2.5 rounded-full border-2 border-amber-400 border-dotted animate-spin-slow" /></div>;
-            case 'pending': return <div className="size-5 rounded-full bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center text-blue-500 border border-blue-100 dark:border-blue-800/30"><div className="size-3 rounded-full border-2 border-blue-400 border-t-transparent animate-spin" /></div>;
+            case 'pending':
+            case 'loading': return <div className="size-5 rounded-full bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center text-blue-500 border border-blue-100 dark:border-blue-800/30"><div className="size-3 rounded-full border-2 border-blue-400 border-t-transparent animate-spin" /></div>;
             default: return null;
         }
     };
@@ -259,7 +326,16 @@ export default function Dashboard() {
                                         </div>
                                     </td>
                                     <td className="px-6 py-3 text-right">
-                                        <Button variant="ghost" size="icon" className="size-8 text-slate-300 group-hover:text-blue-600 group-hover:bg-blue-50 dark:group-hover:bg-blue-900/20 transition-all shadow-none">
+                                        <Button 
+                                            variant="ghost" 
+                                            size="icon" 
+                                            onClick={() => {
+                                                const globalIndex = (currentPage - 1) * itemsPerPage + index;
+                                                setActiveShipmentIndex(globalIndex);
+                                                setSelectedDocKey(null);
+                                            }}
+                                            className="size-8 text-slate-300 group-hover:text-blue-600 group-hover:bg-blue-50 dark:group-hover:bg-blue-900/20 transition-all shadow-none"
+                                        >
                                             <Eye className="size-3.5" />
                                         </Button>
                                     </td>
@@ -280,16 +356,16 @@ export default function Dashboard() {
                     </div>
 
                     <div className="flex items-center gap-1">
-                        <Button 
-                            variant="outline" 
-                            size="icon" 
+                        <Button
+                            variant="outline"
+                            size="icon"
                             className="size-8 rounded-lg border-slate-200 dark:border-slate-800 disabled:opacity-30"
                             onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
                             disabled={currentPage === 1}
                         >
                             <ChevronLeft className="size-3.5" />
                         </Button>
-                        
+
                         <div className="flex items-center gap-1 mx-2">
                             {Array.from({ length: Math.min(5, totalPages) }).map((_, i) => {
                                 // Simple sliding window for pagination if totalPages > 5
@@ -298,15 +374,15 @@ export default function Dashboard() {
                                     pageNum = currentPage - 2 + i;
                                     if (pageNum > totalPages) pageNum = totalPages - (4 - i);
                                 }
-                                
+
                                 return (
                                     <button
                                         key={pageNum}
                                         onClick={() => setCurrentPage(pageNum)}
                                         className={cn(
                                             "size-8 rounded-lg text-[11px] font-bold transition-all",
-                                            currentPage === pageNum 
-                                                ? "bg-blue-600 text-white shadow-lg shadow-blue-500/30" 
+                                            currentPage === pageNum
+                                                ? "bg-blue-600 text-white shadow-lg shadow-blue-500/30"
                                                 : "text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
                                         )}
                                     >
@@ -316,9 +392,9 @@ export default function Dashboard() {
                             })}
                         </div>
 
-                        <Button 
-                            variant="outline" 
-                            size="icon" 
+                        <Button
+                            variant="outline"
+                            size="icon"
                             className="size-8 rounded-lg border-slate-200 dark:border-slate-800 disabled:opacity-30"
                             onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
                             disabled={currentPage === totalPages}
@@ -328,6 +404,109 @@ export default function Dashboard() {
                     </div>
                 </div>
             </div>
+
+            {/* Document Dialog — Premium Glassmorphic */}
+            {activeShipmentIndex !== null && (
+                <div
+                    className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/20 backdrop-blur-sm animate-in fade-in duration-200"
+                    onClick={() => setActiveShipmentIndex(null)}
+                >
+                    <div
+                        className="flex h-[600px] w-[850px] rounded-2xl border border-slate-200/60 dark:border-slate-800/60 bg-white/90 dark:bg-slate-950/90 shadow-2xl overflow-hidden backdrop-blur-xl animate-in zoom-in-95 duration-200"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        {/* Left — Document List */}
+                        <div className="flex w-64 flex-shrink-0 flex-col border-r border-slate-100 dark:border-slate-800/60 bg-slate-50/30 dark:bg-slate-900/20">
+                            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800/60 px-5 py-4">
+                                <div>
+                                    <p className="text-xs font-black text-slate-900 dark:text-white tracking-tighter">DOCUMENTS</p>
+                                    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest truncate max-w-[140px]">{filteredShipments[activeShipmentIndex]?.ref}</p>
+                                </div>
+                                <Button variant="ghost" size="icon" className="size-7 text-slate-400" onClick={() => setActiveShipmentIndex(null)}>
+                                    <X className="h-4 w-4" />
+                                </Button>
+                            </div>
+
+                            <ul className="flex flex-col gap-1 overflow-y-auto p-3 flex-1 custom-scrollbar">
+                                {Object.entries(filteredShipments[activeShipmentIndex]?.docs || {}).map(([key, status]) => {
+                                    const isSelected = selectedDocKey === key;
+                                    const label = columns.find(c => c.key === key)?.label || key;
+
+                                    return (
+                                        <li
+                                            key={key}
+                                            onClick={() => setSelectedDocKey(key)}
+                                            className={cn(
+                                                "flex cursor-pointer items-center gap-3 rounded-xl px-3 py-2.5 transition-all duration-200 group relative",
+                                                isSelected
+                                                    ? "bg-white dark:bg-slate-800 shadow-sm border border-slate-200/60 dark:border-slate-700/60"
+                                                    : "hover:bg-white/50 dark:hover:bg-slate-800/50"
+                                            )}
+                                        >
+                                            <StatusIcon type={status as string} />
+                                            <div className="flex flex-col min-w-0">
+                                                <span className={cn(
+                                                    "text-[10px] font-bold leading-tight truncate transition-colors",
+                                                    isSelected ? "text-slate-900 dark:text-white" : "text-slate-500 group-hover:text-slate-700 dark:group-hover:text-slate-300"
+                                                )}>
+                                                    {label}
+                                                </span>
+                                            </div>
+                                            {isSelected && <div className="absolute right-0 top-1/2 -translate-y-1/2 w-1 h-4 bg-blue-500 rounded-l-full" />}
+                                        </li>
+                                    );
+                                })}
+                            </ul>
+
+                            <div className="border-t border-slate-100 dark:border-slate-800/60 px-5 py-4 bg-white/50 dark:bg-slate-900/40">
+                                <Button
+                                    onClick={() => setActiveShipmentIndex(null)}
+                                    className="w-full h-8 text-[10px] font-black uppercase tracking-widest bg-slate-900 dark:bg-white text-white dark:text-slate-900 hover:opacity-90 transition-opacity"
+                                >
+                                    Close Portal
+                                </Button>
+                            </div>
+                        </div>
+
+                        {/* Right — Preview + Actions */}
+                        <div className="flex flex-1 flex-col bg-white dark:bg-slate-950">
+                            <div className="border-b border-slate-100 dark:border-slate-800/60 px-6 py-4 flex items-center justify-between">
+                                <div>
+                                    <h3 className="text-sm font-black text-slate-900 dark:text-white tracking-tighter">
+                                        {selectedDocKey ? (columns.find(c => c.key === selectedDocKey)?.label || selectedDocKey) : 'PREVIEW PORTAL'}
+                                    </h3>
+                                    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Digital Document Verification</p>
+                                </div>
+                                {selectedDocKey && (
+                                    <div className="flex items-center gap-2">
+                                        <Button variant="outline" size="sm" className="h-7 text-[9px] font-bold uppercase tracking-widest border-slate-200 dark:border-slate-800">
+                                            <Printer className="size-3 mr-1" /> Print
+                                        </Button>
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className="flex-1 overflow-y-auto p-8 bg-slate-50/50 dark:bg-slate-900/20 custom-scrollbar">
+                                {selectedDocKey ? (
+                                    <div className="max-w-2xl mx-auto">
+                                        <MockDocumentPreview
+                                            docName={columns.find(c => c.key === selectedDocKey)?.label || selectedDocKey}
+                                            brand={filteredShipments[activeShipmentIndex]?.ref}
+                                        />
+                                    </div>
+                                ) : (
+                                    <div className="flex h-full flex-col items-center justify-center gap-4 text-slate-200 dark:text-slate-800">
+                                        <div className="size-20 rounded-full border-2 border-dashed border-current flex items-center justify-center">
+                                            <FileText className="size-10" />
+                                        </div>
+                                        <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">Select Document to Initialize</p>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
