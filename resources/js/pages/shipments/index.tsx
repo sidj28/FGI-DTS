@@ -8,10 +8,10 @@ import { type Props, type Shipment } from './types';
 import { breadcrumbs, emptyForm } from './constants';
 import { toDatetimeLocal, incotermName } from './helpers';
 
-import { ShipmentFormFields } from './components/ShipmentFormFields';
-import { ModalShell } from './components/ModalShell';
-import { DocumentDialog } from './components/DocumentDialog';
-import { ShipmentsTable } from './components/ShipmentsTable';
+import { ShipmentFormFields } from '@/components/shipments/shipment-form-fields';
+import { ModalShell } from '@/components/shipments/modal-shell';
+import { DocumentDialog } from '@/components/shipments/document-dialog';
+import { ShipmentsTable } from '@/components/shipments/shipments-table';
 
 export default function Shipments({ shipments, shipmentTypes }: Props) {
     const [activeDocPanel, setActiveDocPanel] = useState<number | null>(null);
