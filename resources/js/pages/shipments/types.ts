@@ -17,8 +17,21 @@ export interface CustomDoc {
 
 export interface ShipmentDocument {
     shipment_doc_id: number;
-    custom_doc: CustomDoc;
-    current_status: DocumentStatus | null;
+    shipment_id: number;
+    custom_doc_id: number;
+    file_path: string | null;
+    file_name: string | null;
+    custom_doc: {
+        custom_doc_id: number;
+        doc_name: string;
+        doc_full_name: string;
+    };
+    current_status: {
+        status: {
+            status_id: number;
+            status_name: string;
+        };
+    } | null;
 }
 
 export interface ShipmentStatus {

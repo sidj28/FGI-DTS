@@ -146,8 +146,8 @@ export default function Shipments({ shipments, shipmentTypes }: Props) {
                         <h1 className="text-2xl font-black tracking-tighter">Shipment Details</h1>
                     </div>
                     <div className="flex items-center gap-2">
-                        <Button variant="outline" size="sm" className="h-8 text-[10px] font-bold gap-2"><Eye className="size-3.5" /> View All</Button>
-                        <Button variant="outline" size="sm" className="h-8 text-[10px] font-bold gap-2"><Calendar className="size-3.5" /> Last 30 Days</Button>
+                        {/* <Button variant="outline" size="sm" className="h-8 text-[10px] font-bold gap-2"><Eye className="size-3.5" /> View All</Button>
+                        <Button variant="outline" size="sm" className="h-8 text-[10px] font-bold gap-2"><Calendar className="size-3.5" /> Last 30 Days</Button> */}
                         <Button variant="outline" size="sm" className="h-8 text-[10px] font-bold gap-2"><Download className="size-3.5" /> Export</Button>
                         <button onClick={openAddModal} className="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-1.5 text-sm text-white hover:bg-blue-700">
                             <Plus className="h-4 w-4" /> Add Shipment
@@ -155,7 +155,7 @@ export default function Shipments({ shipments, shipmentTypes }: Props) {
                     </div>
                 </div>
 
-                <ShipmentsTable 
+                <ShipmentsTable
                     shipments={shipments}
                     filteredShipments={filteredShipments}
                     searchQuery={searchQuery}
@@ -188,7 +188,7 @@ export default function Shipments({ shipments, shipmentTypes }: Props) {
 
             {/* Document Dialog */}
             {activeShipment && (
-                <DocumentDialog 
+                <DocumentDialog
                     activeShipment={activeShipment}
                     selectedDocId={selectedDocId}
                     setSelectedDocId={setSelectedDocId}
