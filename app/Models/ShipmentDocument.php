@@ -16,6 +16,8 @@ class ShipmentDocument extends Model
   protected $fillable = [
     'shipment_id',
     'custom_doc_id',
+    'file_path',    // add this
+    'file_name',    // add this
   ];
 
   protected $casts = [
@@ -39,6 +41,6 @@ class ShipmentDocument extends Model
   public function currentStatus()
   {
     return $this->hasOne(DocumentStatus::class, 'shipment_doc_id', 'shipment_doc_id')
-                ->where('is_current', true);
+      ->where('is_current', true);
   }
 }

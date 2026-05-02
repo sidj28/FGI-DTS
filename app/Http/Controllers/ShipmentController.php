@@ -11,6 +11,7 @@ use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
+use Illuminate\Support\Facades\Storage;
 
 class ShipmentController extends Controller
 {
@@ -102,6 +103,43 @@ class ShipmentController extends Controller
         $shipment->update(['status_id' => $newStatusId]);
 
         return redirect()->route('shipments.index');
+    }
+
+    public function uploadDocument(Request $request, int $shipment_doc_id)
+    {
+        $request->validate([
+            'file' => 'required|file|mimes:pdf|max:10240',
+        ]);
+
+        $doc = ShipmentDocument::findOrFail($shipment_doc_id);
+
+        // Delete old file if exists
+        if ($doc->file_path && Storage::disk('public')->exists($doc->file_path)) {
+            Storage::disk('public')->delete($doc->file_path);
+        }
+
+        $file = $request->file('file');
+        $path = $file->store("shipment-docs/{$doc->shipment_id}", 'public');
+
+        $doc->update([
+            'file_path' => $path,
+            'file_name' => $file->getClientOriginalName(),
+        ]);
+
+        return back();
+    }
+
+    public function viewDocument(int $shipment_doc_id)
+    {
+        $doc = ShipmentDocument::findOrFail($shipment_doc_id);
+
+        if (!$doc->file_path || !Storage::disk('public')->exists($doc->file_path)) {
+            abort(404);
+        }
+
+        return response()->file(Storage::disk('public')->path($doc->file_path), [
+            'Content-Type' => 'application/pdf',
+        ]);
     }
 
     public function update(Request $request, Shipment $shipment)

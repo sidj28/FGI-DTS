@@ -28,13 +28,8 @@ const mainNavItems: NavItem[] = [
         icon: Package,
     },
     {
-        title: 'Shipping',
-        href: '#',
-        icon: Ship,
-    },
-    {
         title: 'Reports',
-        href: '#',
+        href: '/reports',
         icon: BarChart3,
     },
     {

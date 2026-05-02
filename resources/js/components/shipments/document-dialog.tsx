@@ -1,9 +1,10 @@
-import { CheckCircle, FileText, X, XCircle } from 'lucide-react';
+import { CheckCircle, FileText, Upload, X, XCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { type Shipment, type ShipmentDocument } from '@/pages/shipments/types';
 import { isApproved, isRejected } from '@/pages/shipments/helpers';
 import { DocStatusIndicator } from './doc-status-indicator';
-import { MockDocumentPreview } from './mock-document-preview';
+import { useRef } from 'react';
+import { router } from '@inertiajs/react';
 
 interface DocumentDialogProps {
     activeShipment: Shipment;
@@ -22,6 +23,22 @@ export const DocumentDialog = ({
 }: DocumentDialogProps) => {
     const selectedDoc: ShipmentDocument | null =
         activeShipment.documents.find((d) => d.shipment_doc_id === selectedDocId) ?? null;
+
+    const fileInputRef = useRef<HTMLInputElement>(null);
+
+    const handleUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file || !selectedDoc) return;
+
+        const formData = new FormData();
+        formData.append('file', file);
+
+        router.post(
+            `/shipments/documents/${selectedDoc.shipment_doc_id}/upload`,
+            formData,
+            { preserveScroll: true, forceFormData: true }
+        );
+    };
 
     return (
         <div
@@ -61,16 +78,19 @@ export const DocumentDialog = ({
                                     )}
                                 >
                                     <DocStatusIndicator doc={doc} />
-                                    <span
-                                        className={cn(
+                                    <div className="flex flex-col min-w-0">
+                                        <span className={cn(
                                             'text-[10px] font-bold truncate',
-                                            isSelected
-                                                ? 'text-slate-900 dark:text-white'
-                                                : 'text-slate-500'
+                                            isSelected ? 'text-slate-900 dark:text-white' : 'text-slate-500'
+                                        )}>
+                                            {doc.custom_doc.doc_full_name}
+                                        </span>
+                                        {doc.file_name && (
+                                            <span className="text-[9px] text-slate-400 truncate">
+                                                {doc.file_name}
+                                            </span>
                                         )}
-                                    >
-                                        {doc.custom_doc.doc_full_name}
-                                    </span>
+                                    </div>
                                 </li>
                             );
                         })}
@@ -81,25 +101,57 @@ export const DocumentDialog = ({
                             onClick={closePanel}
                             className="w-full rounded-lg bg-slate-900 dark:bg-white py-2 text-[10px] font-black uppercase text-white dark:text-slate-900"
                         >
-                            Close Portal
+                            Close
                         </button>
                     </div>
                 </div>
 
                 {/* Right panel — preview */}
                 <div className="flex flex-1 flex-col bg-white dark:bg-slate-950">
-                    <div className="border-b px-6 py-4">
+                    <div className="border-b px-6 py-4 flex items-center justify-between">
                         <h3 className="text-sm font-black">
-                            {selectedDoc ? selectedDoc.custom_doc.doc_full_name : 'PREVIEW PORTAL'}
+                            {selectedDoc ? selectedDoc.custom_doc.doc_full_name : 'DOCUMENT PREVIEW'}
                         </h3>
+                        {selectedDoc && (
+                            <>
+                                <input
+                                    ref={fileInputRef}
+                                    type="file"
+                                    accept="application/pdf"
+                                    className="hidden"
+                                    onChange={handleUpload}
+                                />
+                                <button
+                                    onClick={() => fileInputRef.current?.click()}
+                                    className="flex items-center gap-1.5 rounded-lg border border-blue-500 px-3 py-1.5 text-[10px] font-bold text-blue-600 hover:bg-blue-50"
+                                >
+                                    <Upload className="h-3 w-3" />
+                                    {selectedDoc.file_path ? 'Replace PDF' : 'Upload PDF'}
+                                </button>
+                            </>
+                        )}
                     </div>
 
-                    <div className="flex-1 overflow-y-auto p-8 bg-slate-50/50 dark:bg-slate-900/20">
+                    <div className="flex-1 overflow-hidden bg-slate-50/50 dark:bg-slate-900/20">
                         {selectedDoc ? (
-                            <MockDocumentPreview
-                                docName={selectedDoc.custom_doc.doc_full_name}
-                                brand={activeShipment.brand}
-                            />
+                            selectedDoc.file_path ? (
+                                <iframe
+                                    src={`/shipments/documents/${selectedDoc.shipment_doc_id}/file`}
+                                    className="w-full h-full"
+                                    title={selectedDoc.custom_doc.doc_full_name}
+                                />
+                            ) : (
+                                <div className="flex h-full flex-col items-center justify-center gap-4 text-slate-300">
+                                    <FileText className="size-10" />
+                                    <p className="text-[10px] font-black uppercase">No PDF uploaded yet</p>
+                                    <button
+                                        onClick={() => fileInputRef.current?.click()}
+                                        className="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-xs font-bold text-white hover:bg-blue-700"
+                                    >
+                                        <Upload className="h-3.5 w-3.5" /> Upload PDF
+                                    </button>
+                                </div>
+                            )
                         ) : (
                             <div className="flex h-full flex-col items-center justify-center gap-4 text-slate-300">
                                 <FileText className="size-10" />
@@ -112,15 +164,11 @@ export const DocumentDialog = ({
                         <div className="border-t px-6 py-4 flex justify-between bg-slate-50 dark:bg-slate-900/40">
                             <div className="text-[10px] font-bold text-slate-400">
                                 Current:{' '}
-                                <span
-                                    className={cn(
-                                        isApproved(selectedDoc)
-                                            ? 'text-green-600'
-                                            : isRejected(selectedDoc)
-                                            ? 'text-red-500'
+                                <span className={cn(
+                                    isApproved(selectedDoc) ? 'text-green-600'
+                                        : isRejected(selectedDoc) ? 'text-red-500'
                                             : 'text-blue-500'
-                                    )}
-                                >
+                                )}>
                                     {selectedDoc.current_status?.status?.status_name || 'No status'}
                                 </span>
                             </div>

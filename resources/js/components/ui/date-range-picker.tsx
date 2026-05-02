@@ -17,8 +17,8 @@ export function DatePickerWithRange({
   className,
   onRangeChange,
 }: React.HTMLAttributes<HTMLDivElement> & { onRangeChange?: (date: DateRange | undefined) => void }) {
-  const [startDate, setStartDate] = React.useState<string>("2026-01-12")
-  const [endDate, setEndDate] = React.useState<string>("2026-02-12")
+  const [startDate, setStartDate] = React.useState<string>("")
+  const [endDate, setEndDate] = React.useState<string>("")
   const [selectingStart, setSelectingStart] = React.useState(true)
   const [currentMonth, setCurrentMonth] = React.useState(new Date(2026, 0, 1))
   const [hoveredDate, setHoveredDate] = React.useState<string | null>(null)
@@ -26,8 +26,8 @@ export function DatePickerWithRange({
   // Trigger callback when dates change
   React.useEffect(() => {
     onRangeChange?.({
-        from: startDate ? parseISO(startDate) : undefined,
-        to: endDate ? parseISO(endDate) : undefined
+      from: startDate ? parseISO(startDate) : undefined,
+      to: endDate ? parseISO(endDate) : undefined
     })
   }, [startDate, endDate, onRangeChange])
 
@@ -94,7 +94,7 @@ export function DatePickerWithRange({
     if (!hoveredDate || !startDate || endDate || selectingStart) return false
     const { year, month } = getDaysInMonth(currentMonth)
     const dateStr = new Date(year, month, day).toISOString().split("T")[0]
-    
+
     if (dateStr < startDate) {
       return dateStr >= hoveredDate && dateStr <= startDate
     }
@@ -104,10 +104,10 @@ export function DatePickerWithRange({
   const formatDateDisplay = (dateStr: string) => {
     if (!dateStr) return null
     const date = new Date(dateStr + "T00:00:00")
-    return date.toLocaleDateString("en-US", { 
-      month: "short", 
-      day: "numeric", 
-      year: "numeric" 
+    return date.toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric"
     })
   }
 
@@ -232,11 +232,11 @@ export function DatePickerWithRange({
                         onMouseLeave={() => setHoveredDate(null)}
                         className={cn(
                           "relative size-7.5 rounded-lg text-[9px] font-black transition-all border border-transparent",
-                          isSelected 
-                            ? "bg-indigo-600 text-white shadow-lg shadow-indigo-500/40 border-indigo-400 z-10" 
+                          isSelected
+                            ? "bg-indigo-600 text-white shadow-lg shadow-indigo-500/40 border-indigo-400 z-10"
                             : isInRange || isHovered
-                            ? "bg-indigo-500/20 text-indigo-200 border-indigo-500/10"
-                            : "text-slate-400 hover:bg-white/10 hover:text-white",
+                              ? "bg-indigo-500/20 text-indigo-200 border-indigo-500/10"
+                              : "text-slate-400 hover:bg-white/10 hover:text-white",
                           isToday && !isSelected && "border-white/20 text-indigo-400"
                         )}
                       >
@@ -266,7 +266,7 @@ export function DatePickerWithRange({
                   </div>
                 </div>
               )}
-              
+
               <div className="mt-3 flex items-center justify-center">
                 <p className="text-[8px] font-bold text-slate-500 uppercase tracking-[0.15em] opacity-50">
                   {selectingStart ? "Select Start Date" : "Select End Date"}
