@@ -7,13 +7,36 @@ import { type Props } from './types';
 import { breadcrumbs } from './constants';
 
 import { FilterBar } from '@/components/reports/filter-bar';
-import { GaugeMeter } from '@/components/reports/gauge-meter';
+import { MetricRadialChart } from '@/components/reports/metric-radial-chart';
 import { MetricCard } from '@/components/reports/metric-card';
 import { CompletenessChart } from '@/components/reports/completeness-chart';
 import { CompleteVsIncompleteChart } from '@/components/reports/complete-vs-incomplete-chart';
 import { DocumentStatusChart } from '@/components/reports/document-status-chart';
 
 export default function Reports({ metrics, charts, filterOptions, activeFilters }: Props) {
+    const shipmentChartConfig = {
+        completed: { label: "Completed", color: "#3b82f6" },
+        pending: { label: "Pending", color: "#eab308" },
+        processing: { label: "Processing", color: "#a855f7" },
+    };
+    const shipmentChartData = [{
+        name: "shipments",
+        completed: metrics.completedShipments,
+        pending: metrics.pendingShipments,
+        processing: metrics.processingShipments,
+    }];
+    
+    const documentChartConfig = {
+        approved: { label: "Approved", color: "#22c55e" },
+        pending: { label: "Pending", color: "#eab308" },
+        rejected: { label: "Rejected", color: "#ef4444" },
+    };
+    const documentChartData = [{
+        name: "documents",
+        approved: metrics.approvedDocs,
+        pending: metrics.pendingDocs,
+        rejected: metrics.rejectedDocs,
+    }];
     const shipmentMetrics = [
         { label: 'Completed Shipments', value: metrics.completedShipments, percentage: metrics.totalShipments ? Math.round((metrics.completedShipments / metrics.totalShipments) * 100) : 0 },
         { label: 'Pending Shipments', value: metrics.pendingShipments, percentage: metrics.totalShipments ? Math.round((metrics.pendingShipments / metrics.totalShipments) * 100) : 0 },
@@ -30,12 +53,12 @@ export default function Reports({ metrics, charts, filterOptions, activeFilters 
     return (
         <>
             <Head title="Reports" />
-            <div className="flex min-h-screen flex-col bg-[#EEF2F7] p-6 gap-5">
+            <div className="flex min-h-screen flex-col bg-[#F9FAFB] dark:bg-[#030712] p-6 gap-5 font-sans text-slate-900 dark:text-slate-100">
 
                 {/* Header */}
                 <div className="flex items-center gap-3">
                     <FileBarChart2 className="h-6 w-6 text-slate-400" />
-                    <h1 className="text-2xl font-black tracking-tighter">Reports</h1>
+                    <h1 className="text-2xl font-black tracking-tighter text-slate-800 dark:text-slate-200">Reports</h1>
                 </div>
 
                 {/* Filters */}
@@ -50,11 +73,17 @@ export default function Reports({ metrics, charts, filterOptions, activeFilters 
 
                 {/* Shipment Metrics */}
                 <div>
-                    <h2 className="text-base font-black tracking-tight text-slate-700 mb-3">Shipment Metrics</h2>
+                    <h2 className="text-base font-black tracking-tight text-slate-800 dark:text-slate-200 mb-3">Shipment Metrics</h2>
                     <div className="flex gap-4">
-                        {/* Gauge */}
-                        <div className="flex items-center justify-center rounded-2xl bg-white border border-slate-100 shadow-sm px-6 py-4">
-                            <GaugeMeter percent={metrics.completionRate} />
+                        {/* Stacked Radial */}
+                        <div className="flex items-center justify-center rounded-2xl bg-white dark:bg-slate-900/40 border border-slate-200/60 dark:border-slate-800/60 shadow-sm px-6 py-4 min-w-[280px]">
+                            <MetricRadialChart 
+                                chartData={shipmentChartData} 
+                                chartConfig={shipmentChartConfig} 
+                                totalValue={metrics.totalShipments} 
+                                totalLabel="Shipments" 
+                                dataKeys={['processing', 'pending', 'completed']} 
+                            />
                         </div>
                         {shipmentMetrics.map((m) => (
                             <MetricCard key={m.label} label={m.label} value={m.value} percentage={m.percentage} total={metrics.totalShipments} />
@@ -64,11 +93,17 @@ export default function Reports({ metrics, charts, filterOptions, activeFilters 
 
                 {/* Document Metrics */}
                 <div>
-                    <h2 className="text-base font-black tracking-tight text-slate-700 mb-3">Document Metrics</h2>
+                    <h2 className="text-base font-black tracking-tight text-slate-800 dark:text-slate-200 mb-3">Document Metrics</h2>
                     <div className="flex gap-4">
-                        {/* Gauge */}
-                        <div className="flex items-center justify-center rounded-2xl bg-white border border-slate-100 shadow-sm px-6 py-4">
-                            <GaugeMeter percent={metrics.totalDocs ? Math.round((metrics.approvedDocs / metrics.totalDocs) * 100) : 0} />
+                        {/* Stacked Radial */}
+                        <div className="flex items-center justify-center rounded-2xl bg-white dark:bg-slate-900/40 border border-slate-200/60 dark:border-slate-800/60 shadow-sm px-6 py-4 min-w-[280px]">
+                            <MetricRadialChart 
+                                chartData={documentChartData} 
+                                chartConfig={documentChartConfig} 
+                                totalValue={metrics.totalDocs} 
+                                totalLabel="Documents" 
+                                dataKeys={['rejected', 'pending', 'approved']} 
+                            />
                         </div>
                         {documentMetrics.map((m) => (
                             <MetricCard key={m.label} label={m.label} value={m.value} percentage={m.percentage} total={metrics.totalDocs} />
