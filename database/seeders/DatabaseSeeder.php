@@ -15,6 +15,7 @@ class DatabaseSeeder extends Seeder
             ShipmentTypeSeeder::class,
             ShipmentSeeder::class,
             ShipmentDocumentSeeder::class, // add this
+            RolesAndPermissionsSeeder::class,
         ]);
     }
 }
