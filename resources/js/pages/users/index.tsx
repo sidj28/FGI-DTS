@@ -1,9 +1,11 @@
 import AppLayout from '@/layouts/app-layout';
-import { Head, router } from '@inertiajs/react';
-import { Shield, ShieldAlert, ShieldCheck, Users as UsersIcon, Edit2, Check } from 'lucide-react';
+import { Head, router, useForm, usePage } from '@inertiajs/react';
+import { Shield, ShieldAlert, ShieldCheck, Users as UsersIcon, Edit2, Check, UserPlus } from 'lucide-react';
 import { type ReactNode, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { ModalShell } from '@/components/shipments/modal-shell';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 
 interface Role {
     role_id: number;
@@ -20,6 +22,9 @@ interface User {
 interface Props {
     users: User[];
     roles: Role[];
+    auth: {
+        permissions: string[];
+    };
 }
 
 const breadcrumbs = [
@@ -27,9 +32,20 @@ const breadcrumbs = [
     { title: 'User Management', href: '/users' },
 ];
 
-export default function Users({ users, roles }: Props) {
+export default function Users({ users, roles, auth }: Props) {
     const [editingUser, setEditingUser] = useState<User | null>(null);
+    const [isCreating, setIsCreating] = useState(false);
+    const [isUpdatingRoles, setIsUpdatingRoles] = useState(false);
     const [selectedRoleIds, setSelectedRoleIds] = useState<number[]>([]);
+
+    const canCreateUser = auth.permissions.includes('manage_users');
+
+    const { data, setData, post, processing, errors, reset } = useForm({
+        name: '',
+        email: '',
+        password: '',
+        role_ids: [] as number[],
+    });
 
     const openEditModal = (user: User) => {
         setEditingUser(user);
@@ -39,6 +55,7 @@ export default function Users({ users, roles }: Props) {
     const closeEditModal = () => {
         setEditingUser(null);
         setSelectedRoleIds([]);
+        setIsUpdatingRoles(false);
     };
 
     const toggleRole = (roleId: number) => {
@@ -47,12 +64,33 @@ export default function Users({ users, roles }: Props) {
         );
     };
 
-    const handleSubmit = () => {
+    const handleUpdateRoles = () => {
         if (!editingUser) return;
+        setIsUpdatingRoles(true);
         router.put(`/users/${editingUser.id}/roles`, { role_ids: selectedRoleIds }, {
             onSuccess: closeEditModal,
+            onFinish: () => setIsUpdatingRoles(false),
             preserveScroll: true,
         });
+    };
+
+    const handleCreateUser = () => {
+        post('/users', {
+            onSuccess: () => {
+                setIsCreating(false);
+                reset();
+            },
+            preserveScroll: true,
+        });
+    };
+
+    const toggleCreateRole = (roleId: number) => {
+        const current = data.role_ids;
+        if (current.includes(roleId)) {
+            setData('role_ids', current.filter(id => id !== roleId));
+        } else {
+            setData('role_ids', [...current, roleId]);
+        }
     };
 
     return (
@@ -64,6 +102,11 @@ export default function Users({ users, roles }: Props) {
                         <UsersIcon className="h-6 w-6 text-slate-400" />
                         <h1 className="text-2xl font-black tracking-tighter">User Management</h1>
                     </div>
+                    {canCreateUser && (
+                        <Button onClick={() => setIsCreating(true)} className="gap-2 bg-blue-600 hover:bg-blue-700 font-bold">
+                            <UserPlus className="size-4" /> Add New User
+                        </Button>
+                    )}
                 </div>
 
                 <div className="flex flex-col mb-8 rounded-xl border border-slate-200/60 bg-white shadow-sm dark:border-slate-800/60 dark:bg-slate-900/30 overflow-hidden">
@@ -119,13 +162,97 @@ export default function Users({ users, roles }: Props) {
                 </div>
             </div>
 
+            {isCreating && (
+                <ModalShell
+                    title="Create New User"
+                    subtitle="Fill in the details to add a new team member"
+                    onClose={() => setIsCreating(false)}
+                    onSubmit={handleCreateUser}
+                    submitLabel="Create User"
+                    loading={processing}
+                >
+                    <div className="p-6 space-y-6">
+                        <div className="space-y-4">
+                            <div className="grid gap-2">
+                                <Label htmlFor="name">Full Name</Label>
+                                <Input
+                                    id="name"
+                                    value={data.name}
+                                    onChange={e => setData('name', e.target.value)}
+                                    placeholder="e.g. John Doe"
+                                    className={errors.name ? 'border-red-500' : ''}
+                                />
+                                {errors.name && <p className="text-xs text-red-500">{errors.name}</p>}
+                            </div>
+                            <div className="grid gap-2">
+                                <Label htmlFor="email">Email Address</Label>
+                                <Input
+                                    id="email"
+                                    type="email"
+                                    value={data.email}
+                                    onChange={e => setData('email', e.target.value)}
+                                    placeholder="john@example.com"
+                                    className={errors.email ? 'border-red-500' : ''}
+                                />
+                                {errors.email && <p className="text-xs text-red-500">{errors.email}</p>}
+                            </div>
+                            <div className="grid gap-2">
+                                <Label htmlFor="password">Password</Label>
+                                <Input
+                                    id="password"
+                                    type="password"
+                                    value={data.password}
+                                    onChange={e => setData('password', e.target.value)}
+                                    className={errors.password ? 'border-red-500' : ''}
+                                />
+                                {errors.password && <p className="text-xs text-red-500">{errors.password}</p>}
+                            </div>
+                        </div>
+
+                        <div className="space-y-3">
+                            <Label>Assign Roles</Label>
+                            <div className="grid gap-3">
+                                {roles.map((role) => {
+                                    const isSelected = data.role_ids.includes(role.role_id);
+                                    return (
+                                        <div
+                                            key={role.role_id}
+                                            onClick={() => toggleCreateRole(role.role_id)}
+                                            className={`flex cursor-pointer items-center justify-between rounded-lg border p-3 transition-all ${
+                                                isSelected
+                                                    ? 'border-blue-600 bg-blue-50/50 dark:border-blue-500 dark:bg-blue-900/20'
+                                                    : 'border-slate-200 hover:border-slate-300 dark:border-slate-800 dark:hover:border-slate-700'
+                                            }`}
+                                        >
+                                            <div className="flex items-center gap-3">
+                                                <div className={`flex h-8 w-8 items-center justify-center rounded-full ${isSelected ? 'bg-blue-100 text-blue-600 dark:bg-blue-900/50 dark:text-blue-400' : 'bg-slate-100 text-slate-400 dark:bg-slate-800'}`}>
+                                                    <Shield className="h-4 w-4" />
+                                                </div>
+                                                <div className={`text-sm font-bold ${isSelected ? 'text-blue-900 dark:text-blue-100' : 'text-slate-700 dark:text-slate-300'}`}>
+                                                    {role.role_name}
+                                                </div>
+                                            </div>
+                                            <div className={`flex h-4 w-4 items-center justify-center rounded border ${isSelected ? 'border-blue-600 bg-blue-600 text-white' : 'border-slate-300 text-transparent dark:border-slate-700'}`}>
+                                                <Check className="h-3 w-3" />
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                            {errors.role_ids && <p className="text-xs text-red-500">{errors.role_ids}</p>}
+                        </div>
+                    </div>
+                </ModalShell>
+            )}
+
             {editingUser && (
                 <ModalShell
                     title="Manage User Roles"
                     subtitle={`Assign or remove roles for ${editingUser.name}`}
                     onClose={closeEditModal}
-                    onSubmit={handleSubmit}
+                    onSubmit={handleUpdateRoles}
                     submitLabel="Save Roles"
+                    loading={isUpdatingRoles}
                 >
                     <div className="p-6 space-y-4">
                         <div className="grid gap-4">

@@ -6,6 +6,8 @@ use App\Models\Role;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\Rules\Password;
 use Inertia\Inertia;
 
 class UserManagementController extends Controller
@@ -21,6 +23,29 @@ class UserManagementController extends Controller
             'users' => $users,
             'roles' => $roles,
         ]);
+    }
+
+    public function store(Request $request)
+    {
+        Gate::authorize('create-user');
+
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|string|email|max:255|unique:users',
+            'password' => ['required', 'string', Password::defaults()],
+            'role_ids' => 'required|array',
+            'role_ids.*' => 'exists:roles,role_id',
+        ]);
+
+        $user = User::create([
+            'name' => $validated['name'],
+            'email' => $validated['email'],
+            'password' => Hash::make($validated['password']),
+        ]);
+
+        $user->roles()->sync($validated['role_ids']);
+
+        return redirect()->back()->with('success', 'User created successfully.');
     }
 
     public function updateRoles(Request $request, User $user)
