@@ -45,10 +45,5 @@ class RolesAndPermissionsSeeder extends Seeder
         $brandPermissionIds = Permission::whereIn('name', ['view_all_shipments', 'add_shipments', 'edit_shipments'])->pluck('permission_id')->toArray();
         $brandManager->permissions()->sync($brandPermissionIds);
 
-        // 4. Assign Supply Chain Manager to the default admin user
-        $adminUser = User::where('email', 'admin@example.com')->first();
-        if ($adminUser) {
-            $adminUser->roles()->syncWithoutDetaching([$supplyChainManager->role_id]);
-        }
     }
 }
