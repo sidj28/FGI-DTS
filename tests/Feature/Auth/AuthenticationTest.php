@@ -88,3 +88,34 @@ test('users are rate limited', function () {
 
     $response->assertTooManyRequests();
 });
+
+test('deactivated users cannot authenticate', function () {
+    $user = User::factory()->create([
+        'is_active' => false,
+        'deactivated_at' => now(),
+    ]);
+
+    $response = $this->post(route('login.store'), [
+        'email' => $user->email,
+        'password' => 'password',
+    ]);
+
+    $this->assertGuest();
+    $response->assertSessionHasErrors('email');
+});
+
+test('active session is revoked if user becomes deactivated', function () {
+    $user = User::factory()->create(['is_active' => true]);
+
+    $this->actingAs($user);
+    $this->assertAuthenticatedAs($user);
+
+    // User is deactivated in background
+    $user->update(['is_active' => false, 'deactivated_at' => now()]);
+
+    $response = $this->get(route('dashboard'));
+
+    $this->assertGuest();
+    $response->assertRedirect(route('home'));
+    $response->assertSessionHasErrors('email');
+});

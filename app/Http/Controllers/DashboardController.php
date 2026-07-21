@@ -2,11 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\DocumentStatus;
 use App\Models\Shipment;
 use App\Models\ShipmentDocument;
-use App\Models\DocumentStatus;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
+
 // use App\Http\Controllers\Log;
 
 class DashboardController extends Controller
@@ -22,16 +23,16 @@ class DashboardController extends Controller
         ])->get();
 
         $totalShipments = $allShipments->count();
-        $archivedShipments = $allShipments->filter(fn($s) => $s->archived_at !== null)->count();
+        $archivedShipments = $allShipments->filter(fn ($s) => $s->archived_at !== null)->count();
         $activeShipments = $totalShipments - $archivedShipments;
 
         // Use ONLY active shipments for the table and subsequent metrics
-        $shipments = $allShipments->filter(fn($s) => $s->archived_at === null);
+        $shipments = $allShipments->filter(fn ($s) => $s->archived_at === null);
 
-        $completedShipments = $shipments->filter(fn($s) => $s->status?->status_name === 'Completed')->count();
-        $pendingShipments = $shipments->filter(fn($s) => $s->status?->status_name === 'Pending')->count();
-        $processingShipments = $shipments->filter(fn($s) => $s->status?->status_name === 'Processing')->count();
-        $failedShipments = $shipments->filter(fn($s) => $s->status?->status_name === 'Failed')->count();
+        $completedShipments = $shipments->filter(fn ($s) => $s->status?->status_name === 'Completed')->count();
+        $pendingShipments = $shipments->filter(fn ($s) => $s->status?->status_name === 'Pending')->count();
+        $processingShipments = $shipments->filter(fn ($s) => $s->status?->status_name === 'Processing')->count();
+        $failedShipments = $shipments->filter(fn ($s) => $s->status?->status_name === 'Failed')->count();
 
         $allShipmentDocIds = ShipmentDocument::whereIn('shipment_id', $shipments->pluck('shipment_id'))
             ->pluck('shipment_doc_id');
@@ -69,7 +70,7 @@ class DashboardController extends Controller
         $shipmentRows = $shipments->map(function ($shipment) use ($docKeys) {
             // Index this shipment's documents by doc_name once, instead of
             // re-scanning the collection for every key in $docKeys.
-            $docsByKey = $shipment->documents->keyBy(fn($d) => $d->customDoc?->doc_name);
+            $docsByKey = $shipment->documents->keyBy(fn ($d) => $d->customDoc?->doc_name);
 
             $docs = [];
             foreach ($docKeys as $key) {

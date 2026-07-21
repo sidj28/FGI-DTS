@@ -22,8 +22,8 @@ class ShipmentDocumentFactory extends Factory
         return [
             'shipment_id' => $shipment->shipment_id,
             'custom_doc_id' => $customDoc->custom_doc_id,
-            'file_name' => $this->faker->word() . '.pdf',
-            'file_path' => 'documents/' . $this->faker->uuid() . '.pdf',
+            'file_name' => $this->faker->word().'.pdf',
+            'file_path' => 'documents/'.$this->faker->uuid().'.pdf',
         ];
     }
 }

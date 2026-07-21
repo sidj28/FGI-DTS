@@ -75,4 +75,29 @@ class UserManagementController extends Controller
 
         return redirect()->back()->with('success', 'User roles updated successfully.');
     }
+
+    public function toggleStatus(Request $request, User $user)
+    {
+        Gate::authorize('manage-users');
+
+        if ($user->id === $request->user()->id) {
+            abort(403, 'You cannot deactivate your own account.');
+        }
+
+        $user->is_active = ! $user->is_active;
+        $user->deactivated_at = $user->is_active ? null : now();
+        $user->save();
+
+        $action = $user->is_active ? 'reactivated' : 'deactivated';
+        $statusText = $user->is_active ? 'reactivated' : 'deactivated';
+
+        ActivityLogger::log(
+            $action,
+            "User \"{$user->name}\" ({$user->email}) was {$statusText}.",
+            $user,
+            ['is_active' => $user->is_active]
+        );
+
+        return redirect()->back()->with('success', "User {$statusText} successfully.");
+    }
 }

@@ -2,7 +2,6 @@
 
 use App\Models\Shipment;
 use App\Models\ShipmentType;
-use App\Models\ActivityLog;
 use Illuminate\Http\UploadedFile;
 
 use function Pest\Laravel\actingAs;

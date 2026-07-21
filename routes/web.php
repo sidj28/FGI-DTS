@@ -29,10 +29,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::put('/roles/{role}/permissions', [RoleManagementController::class, 'updatePermissions'])->name('roles.permissions.update');
     });
 
-    // User Creation (manage-users permission required)
+    // User Creation & Status Management (manage-users permission required)
     Route::post('/users', [UserManagementController::class, 'store'])
         ->middleware('check.permission:manage-users')
         ->name('users.store');
+
+    Route::patch('/users/{user}/status', [UserManagementController::class, 'toggleStatus'])
+        ->middleware('check.permission:manage-users')
+        ->name('users.status.toggle');
 
     // ======= Broker Management =======
     // View brokers

@@ -1,6 +1,6 @@
 import AppLayout from '@/layouts/app-layout';
-import { Head, router, useForm, usePage } from '@inertiajs/react';
-import { Shield, ShieldAlert, ShieldCheck, Users as UsersIcon, Edit2, Check, UserPlus, Lock } from 'lucide-react';
+import { Head, router, useForm } from '@inertiajs/react';
+import { Shield, ShieldAlert, ShieldCheck, Users as UsersIcon, Edit2, Check, UserPlus, Lock, UserX, UserCheck, AlertTriangle } from 'lucide-react';
 import { type ReactNode, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { ModalShell } from '@/components/shipments/modal-shell';
@@ -16,6 +16,8 @@ interface User {
     id: number;
     name: string;
     email: string;
+    is_active?: boolean;
+    deactivated_at?: string | null;
     roles: Role[];
 }
 
@@ -40,11 +42,13 @@ const breadcrumbs = [
 
 export default function Users({ users, roles, auth }: Props) {
     const [editingUser, setEditingUser] = useState<User | null>(null);
+    const [togglingUser, setTogglingUser] = useState<User | null>(null);
     const [isCreating, setIsCreating] = useState(false);
     const [isUpdatingRoles, setIsUpdatingRoles] = useState(false);
+    const [isTogglingStatus, setIsTogglingStatus] = useState(false);
     const [selectedRoleIds, setSelectedRoleIds] = useState<number[]>([]);
 
-    const canCreateUser = auth.permissions.includes('manage-users');
+    const canManageUsers = auth.permissions.includes('manage-users');
 
     const { data, setData, post, processing, errors, reset } = useForm({
         name: '',
@@ -80,6 +84,16 @@ export default function Users({ users, roles, auth }: Props) {
         });
     };
 
+    const handleToggleStatus = () => {
+        if (!togglingUser) return;
+        setIsTogglingStatus(true);
+        router.patch(`/users/${togglingUser.id}/status`, {}, {
+            onSuccess: () => setTogglingUser(null),
+            onFinish: () => setIsTogglingStatus(false),
+            preserveScroll: true,
+        });
+    };
+
     const handleCreateUser = () => {
         post('/users', {
             onSuccess: () => {
@@ -108,7 +122,7 @@ export default function Users({ users, roles, auth }: Props) {
                         <UsersIcon className="h-6 w-6 text-slate-400" />
                         <h1 className="text-2xl font-black tracking-tighter">User Management</h1>
                     </div>
-                    {canCreateUser && (
+                    {canManageUsers && (
                         <Button onClick={() => setIsCreating(true)} className="gap-2 bg-blue-600 hover:bg-blue-700 font-bold">
                             <UserPlus className="size-4" /> Add New User
                         </Button>
@@ -122,52 +136,95 @@ export default function Users({ users, roles, auth }: Props) {
                                 <tr>
                                     <th className="px-6 py-4 text-left text-[11px] font-bold uppercase tracking-wider text-slate-400">Name</th>
                                     <th className="px-6 py-4 text-left text-[11px] font-bold uppercase tracking-wider text-slate-400">Email</th>
+                                    <th className="px-6 py-4 text-left text-[11px] font-bold uppercase tracking-wider text-slate-400">Status</th>
                                     <th className="px-6 py-4 text-left text-[11px] font-bold uppercase tracking-wider text-slate-400">Current Roles</th>
                                     <th className="px-6 py-4 text-right text-[11px] font-bold uppercase tracking-wider text-slate-400">Actions</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-50 dark:divide-slate-800/50">
-                                {users.map((user) => (
-                                    <tr key={user.id} className="group border-b border-slate-50 transition-colors last:border-0 hover:bg-slate-50/50 dark:border-slate-800/40 dark:hover:bg-slate-800/10">
-                                        <td className="px-6 py-4 font-bold text-slate-900 dark:text-slate-100">
-                                            {user.name}
-                                        </td>
-                                        <td className="px-6 py-4 text-slate-500">
-                                            {user.email}
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            <div className="flex flex-wrap gap-2">
-                                                {user.roles.length > 0 ? (
-                                                    user.roles.map((r) => (
-                                                        <span key={r.role_id} className="inline-flex items-center gap-1 rounded-md bg-blue-50 px-2 py-1 text-xs font-bold text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">
-                                                            <ShieldCheck className="size-3" /> {r.role_name}
-                                                        </span>
-                                                    ))
+                                {users.map((user) => {
+                                    const isActive = user.is_active !== false;
+                                    const isSelf = user.id === auth?.user?.id;
+
+                                    return (
+                                        <tr key={user.id} className={`group border-b border-slate-50 transition-colors last:border-0 hover:bg-slate-50/50 dark:border-slate-800/40 dark:hover:bg-slate-800/10 ${!isActive ? 'bg-slate-50/30 dark:bg-slate-950/20' : ''}`}>
+                                            <td className="px-6 py-4 font-bold text-slate-900 dark:text-slate-100">
+                                                {user.name}
+                                            </td>
+                                            <td className="px-6 py-4 text-slate-500">
+                                                {user.email}
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                {isActive ? (
+                                                    <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-700 border border-emerald-200/60 dark:bg-emerald-950/40 dark:text-emerald-400 dark:border-emerald-800/60">
+                                                        <span className="h-1.5 w-1.5 rounded-full bg-emerald-500"></span> Active
+                                                    </span>
                                                 ) : (
-                                                    <span className="inline-flex items-center gap-1 rounded-md bg-slate-100 px-2 py-1 text-xs font-medium text-slate-500 dark:bg-slate-800 dark:text-slate-400">
-                                                        <ShieldAlert className="size-3" /> No Roles
+                                                    <span className="inline-flex items-center gap-1.5 rounded-full bg-red-50 px-2.5 py-1 text-xs font-bold text-red-700 border border-red-200/60 dark:bg-red-950/40 dark:text-red-400 dark:border-red-800/60">
+                                                        <span className="h-1.5 w-1.5 rounded-full bg-red-500"></span> Deactivated
                                                     </span>
                                                 )}
-                                            </div>
-                                        </td>
-                                        <td className="px-6 py-4 text-right">
-                                            {user.id === auth?.user?.id ? (
-                                                <span className="inline-flex items-center gap-1.5 rounded-md bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-400 dark:bg-slate-800 dark:text-slate-500">
-                                                    <Lock className="size-3" /> Cannot Edit Own Roles
-                                                </span>
-                                            ) : (
-                                                <Button
-                                                    variant="outline"
-                                                    size="sm"
-                                                    onClick={() => openEditModal(user)}
-                                                    className="h-8 gap-1.5 text-xs font-bold text-slate-600 hover:text-blue-600"
-                                                >
-                                                    <Edit2 className="size-3" /> Edit Roles
-                                                </Button>
-                                            )}
-                                        </td>
-                                    </tr>
-                                ))}
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                <div className="flex flex-wrap gap-2">
+                                                    {user.roles.length > 0 ? (
+                                                        user.roles.map((r) => (
+                                                            <span key={r.role_id} className="inline-flex items-center gap-1 rounded-md bg-blue-50 px-2 py-1 text-xs font-bold text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">
+                                                                <ShieldCheck className="size-3" /> {r.role_name}
+                                                            </span>
+                                                        ))
+                                                    ) : (
+                                                        <span className="inline-flex items-center gap-1 rounded-md bg-slate-100 px-2 py-1 text-xs font-medium text-slate-500 dark:bg-slate-800 dark:text-slate-400">
+                                                            <ShieldAlert className="size-3" /> No Roles
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-4 text-right">
+                                                <div className="flex items-center justify-end gap-2">
+                                                    {isSelf ? (
+                                                        <span className="inline-flex items-center gap-1.5 rounded-md bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-400 dark:bg-slate-800 dark:text-slate-500">
+                                                            <Lock className="size-3" /> Current User
+                                                        </span>
+                                                    ) : (
+                                                        <>
+                                                            <Button
+                                                                variant="outline"
+                                                                size="sm"
+                                                                onClick={() => openEditModal(user)}
+                                                                className="h-8 gap-1.5 text-xs font-bold text-slate-600 hover:text-blue-600"
+                                                            >
+                                                                <Edit2 className="size-3" /> Roles
+                                                            </Button>
+                                                            {canManageUsers && (
+                                                                <Button
+                                                                    variant="outline"
+                                                                    size="sm"
+                                                                    onClick={() => setTogglingUser(user)}
+                                                                    className={`h-8 gap-1.5 text-xs font-bold ${
+                                                                        isActive
+                                                                            ? 'text-red-600 hover:bg-red-50 hover:text-red-700 border-red-200 dark:border-red-900/50 dark:hover:bg-red-950/30'
+                                                                            : 'text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700 border-emerald-200 dark:border-emerald-900/50 dark:hover:bg-emerald-950/30'
+                                                                    }`}
+                                                                >
+                                                                    {isActive ? (
+                                                                        <>
+                                                                            <UserX className="size-3" /> Deactivate
+                                                                        </>
+                                                                    ) : (
+                                                                        <>
+                                                                            <UserCheck className="size-3" /> Reactivate
+                                                                        </>
+                                                                    )}
+                                                                </Button>
+                                                            )}
+                                                        </>
+                                                    )}
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
                             </tbody>
                         </table>
                     </div>
@@ -299,6 +356,33 @@ export default function Users({ users, roles, auth }: Props) {
                                     </div>
                                 );
                             })}
+                        </div>
+                    </div>
+                </ModalShell>
+            )}
+
+            {togglingUser && (
+                <ModalShell
+                    title={togglingUser.is_active !== false ? 'Deactivate User Account' : 'Reactivate User Account'}
+                    subtitle={`Confirm status change for ${togglingUser.name} (${togglingUser.email})`}
+                    onClose={() => setTogglingUser(null)}
+                    onSubmit={handleToggleStatus}
+                    submitLabel={togglingUser.is_active !== false ? 'Confirm Deactivation' : 'Confirm Reactivation'}
+                    loading={isTogglingStatus}
+                >
+                    <div className="p-6 space-y-4">
+                        <div className="flex items-start gap-4 rounded-xl border border-amber-200 bg-amber-50/50 p-4 dark:border-amber-900/40 dark:bg-amber-950/20">
+                            <AlertTriangle className="size-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                            <div className="space-y-1 text-sm">
+                                <h4 className="font-bold text-amber-900 dark:text-amber-200">
+                                    {togglingUser.is_active !== false ? 'Deactivation Warning' : 'Account Reactivation'}
+                                </h4>
+                                <p className="text-amber-800 dark:text-amber-300 text-xs leading-relaxed">
+                                    {togglingUser.is_active !== false
+                                        ? `Deactivating ${togglingUser.name} will immediately revoke their access to the system. Any active session will be terminated and they will not be able to log back in until reactivated.`
+                                        : `Reactivating ${togglingUser.name} will restore their login access and permissions according to their assigned roles.`}
+                                </p>
+                            </div>
                         </div>
                     </div>
                 </ModalShell>

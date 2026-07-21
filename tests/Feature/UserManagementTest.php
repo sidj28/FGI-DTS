@@ -120,3 +120,69 @@ it('allows updating roles of other users', function () {
 
     expect($targetUser->fresh()->roles->pluck('role_name')->toArray())->toContain('Logis Assoc');
 });
+
+it('allows managing users to deactivate a user', function () {
+    $admin = User::factory()->create();
+    $admin->roles()->attach($this->scmRole);
+
+    $targetUser = User::factory()->create(['is_active' => true]);
+
+    actingAs($admin)
+        ->patch(route('users.status.toggle', $targetUser))
+        ->assertRedirect()
+        ->assertSessionHas('success');
+
+    expect($targetUser->fresh()->is_active)->toBeFalse();
+    expect($targetUser->fresh()->deactivated_at)->not->toBeNull();
+
+    $this->assertDatabaseHas('activity_logs', [
+        'user_id' => $admin->id,
+        'action' => 'deactivated',
+        'subject_id' => $targetUser->id,
+    ]);
+});
+
+it('allows managing users to reactivate a user', function () {
+    $admin = User::factory()->create();
+    $admin->roles()->attach($this->scmRole);
+
+    $targetUser = User::factory()->create(['is_active' => false, 'deactivated_at' => now()]);
+
+    actingAs($admin)
+        ->patch(route('users.status.toggle', $targetUser))
+        ->assertRedirect()
+        ->assertSessionHas('success');
+
+    expect($targetUser->fresh()->is_active)->toBeTrue();
+    expect($targetUser->fresh()->deactivated_at)->toBeNull();
+
+    $this->assertDatabaseHas('activity_logs', [
+        'user_id' => $admin->id,
+        'action' => 'reactivated',
+        'subject_id' => $targetUser->id,
+    ]);
+});
+
+it('prevents a user from deactivating their own account', function () {
+    $admin = User::factory()->create(['is_active' => true]);
+    $admin->roles()->attach($this->scmRole);
+
+    actingAs($admin)
+        ->patch(route('users.status.toggle', $admin))
+        ->assertForbidden();
+
+    expect($admin->fresh()->is_active)->toBeTrue();
+});
+
+it('prevents unauthorized users from toggling user status', function () {
+    $nonAdmin = User::factory()->create();
+    $nonAdmin->roles()->attach($this->otherRole);
+
+    $targetUser = User::factory()->create(['is_active' => true]);
+
+    actingAs($nonAdmin)
+        ->patch(route('users.status.toggle', $targetUser))
+        ->assertForbidden();
+
+    expect($targetUser->fresh()->is_active)->toBeTrue();
+});
