@@ -7,7 +7,6 @@ use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\ReportsController;
 use App\Http\Controllers\RoleManagementController;
 use App\Http\Controllers\ShipmentController;
-use App\Http\Controllers\ShipmentEmailController;
 use App\Http\Controllers\UserManagementController;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Route;

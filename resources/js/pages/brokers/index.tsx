@@ -1,12 +1,10 @@
 import { Head, router, useForm } from '@inertiajs/react';
 import { Truck, Plus, Edit2, Trash2, CheckCircle, XCircle } from 'lucide-react';
-import {  useState } from 'react';
-import type {ReactNode} from 'react';
-import { ModalShell } from '@/components/shipments/modal-shell';
+import { type ReactNode, useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { ModalShell } from '@/components/shipments/modal-shell';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import AppLayout from '@/layouts/app-layout';
 
 interface Broker {
     broker_id: number;
@@ -81,10 +79,7 @@ export default function Brokers({ brokers }: Props) {
     };
 
     const handleDelete = () => {
-        if (!deletingBroker) {
-return;
-}
-
+        if (!deletingBroker) return;
         router.delete(`/brokers/${deletingBroker.broker_id}`, {
             onSuccess: () => setDeletingBroker(null),
         });

@@ -38,10 +38,7 @@ export const DocumentDialog = ({
 
     const handleUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
-
-        if (!file || !selectedDoc) {
-return;
-}
+        if (!file || !selectedDoc) return;
 
         const formData = new FormData();
         formData.append('file', file);
@@ -76,34 +73,9 @@ return;
                         </button>
                     </div>
 
-                    {emails.length > 0 && (
-                        <div className="flex gap-1 border-b border-slate-100 px-3 py-2 dark:border-slate-800/60">
-                            <button
-                                onClick={() => setTab('documents')}
-                                className={cn(
-                                    'rounded-md px-2 py-1 text-[10px] font-black uppercase',
-                                    tab === 'documents' ? 'bg-slate-200 dark:bg-slate-700' : 'text-slate-400',
-                                )}
-                            >
-                                Documents
-                            </button>
-                            <button
-                                onClick={() => setTab('emails')}
-                                className={cn(
-                                    'rounded-md px-2 py-1 text-[10px] font-black uppercase',
-                                    tab === 'emails' ? 'bg-slate-200 dark:bg-slate-700' : 'text-slate-400',
-                                )}
-                            >
-                                Emails
-                            </button>
-                        </div>
-                    )}
-
-                    {tab === 'documents' ? (
-                        <ul className="flex flex-1 flex-col gap-1 overflow-y-auto p-3">
+                    <ul className="flex flex-col gap-1 overflow-y-auto p-3 flex-1">
                         {activeShipment.documents.map((doc) => {
                             const isSelected = selectedDocId === doc.shipment_doc_id;
-
                             return (
                                 <li
                                     key={doc.shipment_doc_id}
@@ -132,35 +104,7 @@ return;
                                 </li>
                             );
                         })}
-                        </ul>
-                    ) : (
-                        <ul className="flex flex-1 flex-col gap-2 overflow-y-auto p-3">
-                            {emails.map((email) => (
-                                <li
-                                    key={email.id}
-                                    onClick={() =>
-                                        setExpandedEmailId((id) => (id === email.id ? null : email.id))
-                                    }
-                                    className="cursor-pointer rounded-xl border border-slate-200/60 p-2 hover:bg-white/50 dark:border-slate-800/60"
-                                >
-                                    <p className="text-[10px] font-bold text-slate-700 dark:text-slate-200">
-                                        {email.from_address}
-                                    </p>
-                                    <p className="text-[9px] text-slate-400">
-                                        {email.subject}
-                                        {email.received_at
-                                            ? ` · ${new Date(email.received_at).toLocaleString()}`
-                                            : ''}
-                                    </p>
-                                    {expandedEmailId === email.id && (
-                                        <p className="mt-1 text-[9px] text-slate-500">
-                                            {email.body_excerpt}
-                                        </p>
-                                    )}
-                                </li>
-                            ))}
-                        </ul>
-                    )}
+                    </ul>
 
                     <div className="border-t border-slate-100 dark:border-slate-800/60 px-5 py-4">
                         <button

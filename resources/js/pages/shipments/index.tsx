@@ -15,38 +15,6 @@ import { breadcrumbs, emptyForm } from './constants';
 import { toDatetimeLocal } from './helpers';
 import type { Props, Shipment } from './types';
 
-import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
-
-function exportToPDF(shipments: Shipment[]) {
-    const doc = new jsPDF({ orientation: 'landscape' });
-    const headers = [['SR#', 'Brand', 'Service Type', 'Incoterm', 'ATA', 'Broker', 'Brand Manager', 'Status', 'Created At', 'Archived At', 'Docs Approved/Total']];
-    const rows = shipments.map(s => [
-        s.shipment_reference,
-        s.brand,
-        s.shipment_type.shipment_type_name,
-        incotermName(s.incoterm),
-        formatDate(s.actual_time_of_arrival),
-        s.broker?.broker_name ?? '',
-        s.brand_manager,
-        s.status.status_name,
-        formatDate(s.created_at),
-        formatDate(s.archived_at),
-        `${s.documents.filter(d => d.current_status?.status?.status_name === 'Approved').length}/${s.documents.length}`,
-    ]);
-
-    doc.text("Shipments Export", 14, 15);
-    autoTable(doc, {
-        head: headers,
-        body: rows,
-        startY: 20,
-        styles: { fontSize: 8 },
-        headStyles: { fillColor: [59, 130, 246] }
-    });
-
-    doc.save(`shipments-${new Date().toISOString().slice(0, 10)}.pdf`);
-}
-
 export default function Shipments({
     shipments,
     shipmentTypes,

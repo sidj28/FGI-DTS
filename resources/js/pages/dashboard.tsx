@@ -72,25 +72,14 @@ interface ShipmentRow {
     ref: string;
     broker: string;
     date: string;
-    broker: string;
     incoterm: string;
     status: 'completed' | 'warning' | 'pending' | 'error';
     docs: Record<string, DocInfo>;
 }
 
-interface BrokerOption {
-    broker_id: number;
-    broker_name: string;
-}
-
 interface Props {
     metrics: Metrics;
     shipmentRows: ShipmentRow[];
-    brokers: BrokerOption[];
-    activeFilters: {
-        brokerId: string | null;
-    };
-    chartData: { date: string; completed: number; total: number }[];
 }
 
 const columns = [
@@ -107,7 +96,7 @@ const columns = [
     { key: 'DH', label: 'DH' },
 ];
 
-export default function Dashboard({ metrics, shipmentRows, brokers, activeFilters, chartData }: Props) {
+export default function Dashboard({ metrics, shipmentRows }: Props) {
     const [activeTab, setActiveTab] = useState('All tasks');
     const [dateRange, setDateRange] = useState<
         { from?: Date; to?: Date } | undefined
@@ -396,7 +385,6 @@ export default function Dashboard({ metrics, shipmentRows, brokers, activeFilter
                                 ).map(([key, docInfo]) => {
                                     const isSelected = selectedDocKey === key;
                                     const info = docInfo as DocInfo;
-
                                     return (
                                         <li
                                             key={key}
@@ -499,7 +487,6 @@ export default function Dashboard({ metrics, shipmentRows, brokers, activeFilter
                                                 />
                                             );
                                         }
-
                                         return (
                                             <div className="flex h-full flex-col items-center justify-center gap-4 text-slate-300">
                                                 <FileText className="size-10" />

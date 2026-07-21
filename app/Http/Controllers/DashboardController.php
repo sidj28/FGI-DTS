@@ -9,7 +9,7 @@ use Inertia\Inertia;
 
 class DashboardController extends Controller
 {
-    public function index(Request $request)
+    public function index()
     {
         $brokerId = $request->query('broker_id');
 
@@ -19,10 +19,7 @@ class DashboardController extends Controller
             'broker',
             'documents.customDoc',
             'documents.currentStatus.status',
-        ])
-            ->active()
-            ->when($brokerId, fn ($query) => $query->where('broker_id', $brokerId))
-            ->get();
+        ])->get();
 
         $totalShipments = $shipments->count();
         $activeShipments = $totalShipments;
@@ -32,7 +29,7 @@ class DashboardController extends Controller
         $processingShipments = $shipments->filter(fn ($s) => $s->status?->status_name === 'Processing')->count();
         $failedShipments = $shipments->filter(fn ($s) => $s->status?->status_name === 'Failed')->count();
 
-        $allDocs = $shipments->flatMap->documents;
+        $totalDocs = $allShipmentDocIds->count();
 
         $totalDocs = $allDocs->count();
         $uploadedDocs = $allDocs->filter(fn ($doc) => ! empty($doc->file_path))->count();
@@ -42,7 +39,7 @@ class DashboardController extends Controller
         $activeDocs = $uploadedDocs + $missingDocs;
 
         $completionRate = $totalDocs > 0
-            ? round(($uploadedDocs / $totalDocs) * 100)
+            ? round(($approvedDocs / $totalDocs) * 100)
             : 0;
 
         $chartData = collect();
@@ -117,7 +114,7 @@ class DashboardController extends Controller
             'metrics' => [
                 'totalShipments' => $totalShipments,
                 'activeShipments' => $activeShipments,
-                'archivedShipments' => Shipment::withoutGlobalScope('active')->whereNotNull('archived_at')->count(),
+                'archivedShipments' => $archivedShipments,
                 'completedShipments' => $completedShipments,
                 'pendingShipments' => $pendingShipments,
                 'processingShipments' => $processingShipments,
@@ -130,12 +127,7 @@ class DashboardController extends Controller
                 'missingDocs' => $missingDocs,
                 'completionRate' => $completionRate,
             ],
-            'chartData' => $chartData,
             'shipmentRows' => $shipmentRows,
-            'brokers' => Broker::where('is_active', true)->get(['broker_id', 'broker_name']),
-            'activeFilters' => [
-                'brokerId' => $brokerId,
-            ],
         ]);
     }
 }
