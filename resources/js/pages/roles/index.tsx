@@ -1,6 +1,6 @@
 import AppLayout from '@/layouts/app-layout';
 import { Head, router } from '@inertiajs/react';
-import { Shield, ShieldAlert, ShieldCheck, Key as KeyIcon, Edit2, Check } from 'lucide-react';
+import { Shield, ShieldAlert, ShieldCheck, Key as KeyIcon, Edit2, Check, Lock } from 'lucide-react';
 import { type ReactNode, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { ModalShell } from '@/components/shipments/modal-shell';
@@ -21,6 +21,10 @@ interface Role {
 interface Props {
     roles: Role[];
     permissions: Permission[];
+    auth?: {
+        roles?: string[];
+        user?: { id: number };
+    };
 }
 
 const breadcrumbs = [
@@ -28,7 +32,7 @@ const breadcrumbs = [
     { title: 'Role Management', href: '/roles' },
 ];
 
-export default function Roles({ roles, permissions }: Props) {
+export default function Roles({ roles, permissions, auth }: Props) {
     const [editingRole, setEditingRole] = useState<Role | null>(null);
     const [selectedPermissionIds, setSelectedPermissionIds] = useState<number[]>([]);
 
@@ -108,14 +112,20 @@ export default function Roles({ roles, permissions }: Props) {
                                             </div>
                                         </td>
                                         <td className="px-6 py-4 text-right">
-                                            <Button
-                                                variant="outline"
-                                                size="sm"
-                                                onClick={() => openEditModal(role)}
-                                                className="h-8 gap-1.5 text-xs font-bold text-slate-600 hover:text-purple-600"
-                                            >
-                                                <Edit2 className="size-3" /> Edit Permissions
-                                            </Button>
+                                            {role.role_name === 'Super Admin' || auth?.roles?.includes(role.role_name) ? (
+                                                <span className="inline-flex items-center gap-1.5 rounded-md bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-400 dark:bg-slate-800 dark:text-slate-500">
+                                                    <Lock className="size-3" /> Protected Role
+                                                </span>
+                                            ) : (
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    onClick={() => openEditModal(role)}
+                                                    className="h-8 gap-1.5 text-xs font-bold text-slate-600 hover:text-purple-600"
+                                                >
+                                                    <Edit2 className="size-3" /> Edit Permissions
+                                                </Button>
+                                            )}
                                         </td>
                                     </tr>
                                 ))}

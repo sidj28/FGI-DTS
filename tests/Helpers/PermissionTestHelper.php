@@ -19,17 +19,23 @@ class PermissionTestHelper
     {
         $user = User::factory()->create();
 
-        // Map user-friendly actions to internal action names
+        // Map user-friendly actions and resources to internal database fields
         $actionMap = [
             'manage' => 'manage_roles',
             'manage_users' => 'manage_users',
             'manage_roles' => 'manage_roles',
         ];
 
+        $resourceMap = [
+            'roles' => 'rbac',
+            'users' => 'rbac',
+        ];
+
         $internalAction = $actionMap[$action] ?? $action;
+        $internalResource = $resourceMap[$resource] ?? $resource;
 
         $permission = Permission::where('action', $internalAction)
-            ->where('resource', $resource)
+            ->where('resource', $internalResource)
             ->firstOrFail();
 
         $role = Role::factory()->create();
@@ -53,11 +59,17 @@ class PermissionTestHelper
             'manage_roles' => 'manage_roles',
         ];
 
+        $resourceMap = [
+            'roles' => 'rbac',
+            'users' => 'rbac',
+        ];
+
         $permissionIds = [];
         foreach ($permissions as [$action, $resource]) {
             $internalAction = $actionMap[$action] ?? $action;
+            $internalResource = $resourceMap[$resource] ?? $resource;
             $permission = Permission::where('action', $internalAction)
-                ->where('resource', $resource)
+                ->where('resource', $internalResource)
                 ->firstOrFail();
             $permissionIds[] = $permission->permission_id;
         }

@@ -55,6 +55,10 @@ class UserManagementController extends Controller
     {
         Gate::authorize('manage-roles');
 
+        if ($user->id === $request->user()->id) {
+            abort(403, 'You cannot modify your own roles.');
+        }
+
         $validated = $request->validate([
             'role_ids' => 'array',
             'role_ids.*' => 'exists:roles,role_id',

@@ -1,6 +1,6 @@
 import AppLayout from '@/layouts/app-layout';
 import { Head, router, useForm, usePage } from '@inertiajs/react';
-import { Shield, ShieldAlert, ShieldCheck, Users as UsersIcon, Edit2, Check, UserPlus } from 'lucide-react';
+import { Shield, ShieldAlert, ShieldCheck, Users as UsersIcon, Edit2, Check, UserPlus, Lock } from 'lucide-react';
 import { type ReactNode, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { ModalShell } from '@/components/shipments/modal-shell';
@@ -23,6 +23,12 @@ interface Props {
     users: User[];
     roles: Role[];
     auth: {
+        user?: {
+            id: number;
+            name: string;
+            email: string;
+        };
+        roles?: string[];
         permissions: string[];
     };
 }
@@ -145,14 +151,20 @@ export default function Users({ users, roles, auth }: Props) {
                                             </div>
                                         </td>
                                         <td className="px-6 py-4 text-right">
-                                            <Button
-                                                variant="outline"
-                                                size="sm"
-                                                onClick={() => openEditModal(user)}
-                                                className="h-8 gap-1.5 text-xs font-bold text-slate-600 hover:text-blue-600"
-                                            >
-                                                <Edit2 className="size-3" /> Edit Roles
-                                            </Button>
+                                            {user.id === auth?.user?.id ? (
+                                                <span className="inline-flex items-center gap-1.5 rounded-md bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-400 dark:bg-slate-800 dark:text-slate-500">
+                                                    <Lock className="size-3" /> Cannot Edit Own Roles
+                                                </span>
+                                            ) : (
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    onClick={() => openEditModal(user)}
+                                                    className="h-8 gap-1.5 text-xs font-bold text-slate-600 hover:text-blue-600"
+                                                >
+                                                    <Edit2 className="size-3" /> Edit Roles
+                                                </Button>
+                                            )}
                                         </td>
                                     </tr>
                                 ))}

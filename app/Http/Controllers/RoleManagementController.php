@@ -28,6 +28,10 @@ class RoleManagementController extends Controller
     {
         Gate::authorize('manage-roles');
 
+        if ($role->role_name === 'Super Admin' || $request->user()->roles->pluck('role_id')->contains($role->role_id)) {
+            abort(403, 'You cannot modify permissions for the Super Admin role or your own assigned role.');
+        }
+
         $validated = $request->validate([
             'permission_ids' => 'array',
             'permission_ids.*' => 'exists:permissions,permission_id',

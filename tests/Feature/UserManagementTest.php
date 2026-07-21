@@ -77,3 +77,46 @@ it('validates user creation input', function () {
         ])
         ->assertSessionHasErrors(['name', 'email', 'password', 'role_ids']);
 });
+
+it('prevents a user from updating their own roles', function () {
+    $manageRolesPerm = Permission::firstOrCreate(
+        ['name' => 'manage-roles'],
+        ['resource' => 'rbac', 'action' => 'manage_roles']
+    );
+    $adminRole = Role::firstOrCreate(['role_name' => 'Super Admin']);
+    $adminRole->permissions()->syncWithoutDetaching([$manageRolesPerm->permission_id]);
+
+    $admin = User::factory()->create();
+    $admin->roles()->attach($adminRole);
+
+    actingAs($admin)
+        ->put(route('users.roles.update', $admin), [
+            'role_ids' => [$this->otherRole->role_id],
+        ])
+        ->assertForbidden();
+
+    expect($admin->fresh()->roles->pluck('role_name')->toArray())->toContain('Super Admin');
+});
+
+it('allows updating roles of other users', function () {
+    $manageRolesPerm = Permission::firstOrCreate(
+        ['name' => 'manage-roles'],
+        ['resource' => 'rbac', 'action' => 'manage_roles']
+    );
+    $adminRole = Role::firstOrCreate(['role_name' => 'Super Admin']);
+    $adminRole->permissions()->syncWithoutDetaching([$manageRolesPerm->permission_id]);
+
+    $admin = User::factory()->create();
+    $admin->roles()->attach($adminRole);
+
+    $targetUser = User::factory()->create();
+
+    actingAs($admin)
+        ->put(route('users.roles.update', $targetUser), [
+            'role_ids' => [$this->otherRole->role_id],
+        ])
+        ->assertRedirect()
+        ->assertSessionHas('success');
+
+    expect($targetUser->fresh()->roles->pluck('role_name')->toArray())->toContain('Logis Assoc');
+});
