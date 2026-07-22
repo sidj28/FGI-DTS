@@ -1,12 +1,15 @@
 <?php
 
+use App\Exceptions\StaleModelException;
 use App\Http\Middleware\CheckPermission;
+use App\Http\Middleware\EnsureUserIsActive;
 use App\Http\Middleware\HandleAppearance;
 use App\Http\Middleware\HandleInertiaRequests;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets;
+use Illuminate\Http\Request;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -20,6 +23,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->web(append: [
             HandleAppearance::class,
             HandleInertiaRequests::class,
+            EnsureUserIsActive::class,
             AddLinkHeadersForPreloadedAssets::class,
         ]);
 
@@ -28,7 +32,7 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        $exceptions->render(function (\App\Exceptions\StaleModelException $e, \Illuminate\Http\Request $request) {
+        $exceptions->render(function (StaleModelException $e, Request $request) {
             if ($request->header('X-Inertia')) {
                 return response()->json([
                     'message' => $e->getMessage(),

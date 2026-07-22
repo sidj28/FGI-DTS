@@ -19,6 +19,7 @@ interface User {
     email: string;
     role_id: number;
     role: Role | null;
+    is_active: boolean;
 }
 
 interface Props {
@@ -89,6 +90,14 @@ export default function Users({ users, roles, auth }: Props) {
         });
     };
 
+    const handleToggleStatus = (user: User) => {
+        router.patch(`/users/${user.id}/status`, {
+            is_active: !user.is_active,
+        }, {
+            preserveScroll: true,
+        });
+    };
+
     const selectCreateRole = (roleId: number) => {
         setData('role_id', roleId);
     };
@@ -117,6 +126,7 @@ export default function Users({ users, roles, auth }: Props) {
                                     <th className="px-6 py-4 text-left text-[11px] font-bold uppercase tracking-wider text-slate-400">Name</th>
                                     <th className="px-6 py-4 text-left text-[11px] font-bold uppercase tracking-wider text-slate-400">Email</th>
                                     <th className="px-6 py-4 text-left text-[11px] font-bold uppercase tracking-wider text-slate-400">Current Role</th>
+                                    <th className="px-6 py-4 text-left text-[11px] font-bold uppercase tracking-wider text-slate-400">Status</th>
                                     <th className="px-6 py-4 text-right text-[11px] font-bold uppercase tracking-wider text-slate-400">Actions</th>
                                 </tr>
                             </thead>
@@ -140,25 +150,52 @@ export default function Users({ users, roles, auth }: Props) {
                                                  </span>
                                              )}
                                          </td>
-                                         <td className="px-6 py-4 text-right">
-                                             {user.id === auth.user?.id ? (
-                                                 <span className="text-xs font-medium text-slate-400 dark:text-slate-500 italic pr-3 select-none">
-                                                     Self (Disabled)
-                                                 </span>
-                                             ) : user.role?.role_name === 'Super Admin' && !auth.roles.includes('Super Admin') ? (
-                                                 <span className="text-xs font-medium text-slate-400 dark:text-slate-500 italic pr-3 select-none">
-                                                     Super Admin (Locked)
+                                         <td className="px-6 py-4">
+                                             {user.is_active ? (
+                                                 <span className="inline-flex items-center gap-1 rounded-md bg-green-50 px-2 py-1 text-xs font-bold text-green-700 dark:bg-green-900/30 dark:text-green-300">
+                                                     Active
                                                  </span>
                                              ) : (
-                                                 <Button
-                                                     variant="outline"
-                                                     size="sm"
-                                                     onClick={() => openEditModal(user)}
-                                                     className="h-8 gap-1.5 text-xs font-bold text-slate-600 hover:text-blue-600"
-                                                 >
-                                                     <Edit2 className="size-3" /> Edit Roles
-                                                 </Button>
+                                                 <span className="inline-flex items-center gap-1 rounded-md bg-red-50 px-2 py-1 text-xs font-bold text-red-700 dark:bg-red-900/30 dark:text-red-300">
+                                                     Deactivated
+                                                 </span>
                                              )}
+                                         </td>
+                                         <td className="px-6 py-4 text-right">
+                                             <div className="flex items-center justify-end gap-2">
+                                                 {user.id === auth.user?.id ? (
+                                                     <span className="text-xs font-medium text-slate-400 dark:text-slate-500 italic pr-3 select-none">
+                                                         Self (Disabled)
+                                                     </span>
+                                                 ) : user.role?.role_name === 'Super Admin' && !auth.roles.includes('Super Admin') ? (
+                                                     <span className="text-xs font-medium text-slate-400 dark:text-slate-500 italic pr-3 select-none">
+                                                         Super Admin (Locked)
+                                                     </span>
+                                                 ) : (
+                                                     <>
+                                                         <Button
+                                                             variant="outline"
+                                                             size="sm"
+                                                             onClick={() => openEditModal(user)}
+                                                             className="h-8 gap-1.5 text-xs font-bold text-slate-600 hover:text-blue-600"
+                                                         >
+                                                             <Edit2 className="size-3" /> Edit Roles
+                                                         </Button>
+                                                         <Button
+                                                             variant="outline"
+                                                             size="sm"
+                                                             onClick={() => handleToggleStatus(user)}
+                                                             className={`h-8 gap-1.5 text-xs font-bold ${
+                                                                 user.is_active
+                                                                     ? 'text-red-600 hover:text-red-700 hover:bg-red-50'
+                                                                     : 'text-green-600 hover:text-green-700 hover:bg-green-50'
+                                                             }`}
+                                                         >
+                                                             {user.is_active ? 'Deactivate' : 'Activate'}
+                                                         </Button>
+                                                     </>
+                                                 )}
+                                             </div>
                                          </td>
                                     </tr>
                                 ))}
