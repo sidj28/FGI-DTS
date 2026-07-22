@@ -24,6 +24,8 @@ interface Props {
     users: User[];
     roles: Role[];
     auth: {
+        user: User;
+        roles: string[];
         permissions: string[];
     };
 }
@@ -149,16 +151,26 @@ return;
                                                 )}
                                             </div>
                                         </td>
-                                        <td className="px-6 py-4 text-right">
-                                            <Button
-                                                variant="outline"
-                                                size="sm"
-                                                onClick={() => openEditModal(user)}
-                                                className="h-8 gap-1.5 text-xs font-bold text-slate-600 hover:text-blue-600"
-                                            >
-                                                <Edit2 className="size-3" /> Edit Roles
-                                            </Button>
-                                        </td>
+                                         <td className="px-6 py-4 text-right">
+                                             {user.id === auth.user?.id ? (
+                                                 <span className="text-xs font-medium text-slate-400 dark:text-slate-500 italic pr-3 select-none">
+                                                     Self (Disabled)
+                                                 </span>
+                                             ) : user.roles.some((r) => r.role_name === 'Super Admin') && !auth.roles.includes('Super Admin') ? (
+                                                 <span className="text-xs font-medium text-slate-400 dark:text-slate-500 italic pr-3 select-none">
+                                                     Super Admin (Locked)
+                                                 </span>
+                                             ) : (
+                                                 <Button
+                                                     variant="outline"
+                                                     size="sm"
+                                                     onClick={() => openEditModal(user)}
+                                                     className="h-8 gap-1.5 text-xs font-bold text-slate-600 hover:text-blue-600"
+                                                 >
+                                                     <Edit2 className="size-3" /> Edit Roles
+                                                 </Button>
+                                             )}
+                                         </td>
                                     </tr>
                                 ))}
                             </tbody>
@@ -219,15 +231,21 @@ return;
                             <div className="grid gap-3">
                                 {roles.map((role) => {
                                     const isSelected = data.role_ids.includes(role.role_id);
+                                    const isSuperAdminOption = role.role_name === 'Super Admin';
+                                    const disabled = isSuperAdminOption && !auth.roles.includes('Super Admin');
 
                                     return (
                                         <div
                                             key={role.role_id}
-                                            onClick={() => toggleCreateRole(role.role_id)}
-                                            className={`flex cursor-pointer items-center justify-between rounded-lg border p-3 transition-all ${
-                                                isSelected
+                                            onClick={() => !disabled && toggleCreateRole(role.role_id)}
+                                            className={`flex items-center justify-between rounded-lg border p-3 transition-all ${
+                                                disabled
+                                                    ? 'opacity-50 cursor-not-allowed border-slate-100 bg-slate-50 dark:border-slate-800 dark:bg-slate-900/50'
+                                                    : 'cursor-pointer border-slate-200 hover:border-slate-300'
+                                            } ${
+                                                isSelected && !disabled
                                                     ? 'border-blue-600 bg-blue-50/50 dark:border-blue-500 dark:bg-blue-900/20'
-                                                    : 'border-slate-200 hover:border-slate-300 dark:border-slate-800 dark:hover:border-slate-700'
+                                                    : ''
                                             }`}
                                         >
                                             <div className="flex items-center gap-3">
@@ -264,15 +282,21 @@ return;
                         <div className="grid gap-4">
                             {roles.map((role) => {
                                 const isSelected = selectedRoleIds.includes(role.role_id);
+                                const isSuperAdminOption = role.role_name === 'Super Admin';
+                                const disabled = isSuperAdminOption && !auth.roles.includes('Super Admin');
 
                                 return (
                                     <div
                                         key={role.role_id}
-                                        onClick={() => toggleRole(role.role_id)}
-                                        className={`flex cursor-pointer items-center justify-between rounded-lg border p-4 transition-all ${
-                                            isSelected
+                                        onClick={() => !disabled && toggleRole(role.role_id)}
+                                        className={`flex items-center justify-between rounded-lg border p-4 transition-all ${
+                                            disabled
+                                                ? 'opacity-50 cursor-not-allowed border-slate-100 bg-slate-50 dark:border-slate-800 dark:bg-slate-900/50'
+                                                : 'cursor-pointer border-slate-200 hover:border-slate-300'
+                                        } ${
+                                            isSelected && !disabled
                                                 ? 'border-blue-600 bg-blue-50/50 dark:border-blue-500 dark:bg-blue-900/20'
-                                                : 'border-slate-200 hover:border-slate-300 dark:border-slate-800 dark:hover:border-slate-700'
+                                                : ''
                                         }`}
                                     >
                                         <div className="flex items-center gap-3">

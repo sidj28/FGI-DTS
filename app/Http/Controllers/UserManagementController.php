@@ -38,6 +38,14 @@ class UserManagementController extends Controller
             'role_ids.*' => 'exists:roles,role_id',
         ]);
 
+        // Prevent non-Super Admins from creating a Super Admin
+        $superAdminRole = Role::where('role_name', 'Super Admin')->first();
+        if ($superAdminRole && in_array($superAdminRole->role_id, $validated['role_ids'])) {
+            if (! $request->user()->hasRole('Super Admin')) {
+                abort(403, 'Only Super Admins can assign the Super Admin role.');
+            }
+        }
+
         $user = User::create([
             'name' => $validated['name'],
             'email' => $validated['email'],
@@ -55,10 +63,32 @@ class UserManagementController extends Controller
     {
         Gate::authorize('manage-roles');
 
+        if ($user->id === $request->user()->id) {
+            abort(403, 'You cannot modify your own roles.');
+        }
+
+        $isCurrentUserSuperAdmin = $request->user()->hasRole('Super Admin');
+
+        // 1. Only Super Admins can modify an existing Super Admin user
+        if ($user->hasRole('Super Admin') && ! $isCurrentUserSuperAdmin) {
+            abort(403, 'Only Super Admins can modify Super Admin users.');
+        }
+
         $validated = $request->validate([
             'role_ids' => 'array',
             'role_ids.*' => 'exists:roles,role_id',
         ]);
+
+        // 2. Only Super Admins can assign or remove the Super Admin role
+        $superAdminRole = Role::where('role_name', 'Super Admin')->first();
+        if ($superAdminRole) {
+            $hasSuperAdminInRequest = in_array($superAdminRole->role_id, $validated['role_ids'] ?? []);
+            $hadSuperAdminBefore = $user->hasRole('Super Admin');
+
+            if (($hasSuperAdminInRequest !== $hadSuperAdminBefore) && ! $isCurrentUserSuperAdmin) {
+                abort(403, 'Only Super Admins can assign or remove the Super Admin role.');
+            }
+        }
 
         $user->roles()->sync($validated['role_ids']);
 

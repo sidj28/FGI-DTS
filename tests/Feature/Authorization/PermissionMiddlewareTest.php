@@ -103,7 +103,7 @@ describe('authorized access passes middleware', function () {
     });
 
     test('authorized user can access RBAC routes with manage-roles', function () {
-        $user = createUserWithPermission('manage', 'roles');
+        $user = createUserWithPermission('manage', 'rbac');
 
         $response = $this->actingAs($user)->get(route('users.index'));
 
@@ -255,7 +255,7 @@ describe('RBAC enforcement', function () {
     });
 
     test('manage-roles permission allows accessing user management', function () {
-        $user = createUserWithPermission('manage', 'roles');
+        $user = createUserWithPermission('manage', 'rbac');
 
         $response = $this->actingAs($user)->get(route('users.index'));
 
@@ -264,7 +264,7 @@ describe('RBAC enforcement', function () {
 
     test('manage-roles permission allows updating role permissions', function () {
         $role = Role::factory()->create();
-        $user = createUserWithPermission('manage', 'roles');
+        $user = createUserWithPermission('manage', 'rbac');
 
         $response = $this->actingAs($user)->put(route('roles.permissions.update', $role), [
             'permission_ids' => [],
@@ -286,7 +286,7 @@ describe('RBAC enforcement', function () {
 
     test('manage-roles permission allows updating user roles', function () {
         $targetUser = User::factory()->create();
-        $user = createUserWithPermission('manage', 'roles');
+        $user = createUserWithPermission('manage', 'rbac');
 
         $response = $this->actingAs($user)->put(route('users.roles.update', $targetUser), [
             'role_ids' => [],
@@ -301,6 +301,61 @@ describe('RBAC enforcement', function () {
 
         $response = $this->actingAs($user)->put(route('users.roles.update', $targetUser), [
             'role_ids' => [],
+        ]);
+
+        expect($response->status())->toBe(403);
+    });
+
+    test('authorized user cannot update their own roles', function () {
+        $user = createUserWithPermission('manage', 'rbac');
+
+        $response = $this->actingAs($user)->put(route('users.roles.update', $user), [
+            'role_ids' => [],
+        ]);
+
+        expect($response->status())->toBe(403);
+    });
+
+    test('authorized user cannot update the permissions of a role they possess', function () {
+        $user = createUserWithPermission('manage', 'rbac');
+        $possessedRole = $user->roles()->first();
+
+        $response = $this->actingAs($user)->put(route('roles.permissions.update', $possessedRole), [
+            'permission_ids' => [],
+        ]);
+
+        expect($response->status())->toBe(403);
+    });
+
+    test('non-Super Admin with manage-roles permission cannot modify roles of a Super Admin user', function () {
+        $nonSuperAdmin = createUserWithPermission('manage', 'rbac');
+        $superAdminUser = createUserWithRole('Super Admin');
+
+        $response = $this->actingAs($nonSuperAdmin)->put(route('users.roles.update', $superAdminUser), [
+            'role_ids' => [],
+        ]);
+
+        expect($response->status())->toBe(403);
+    });
+
+    test('non-Super Admin with manage-roles permission cannot assign Super Admin role', function () {
+        $nonSuperAdmin = createUserWithPermission('manage', 'rbac');
+        $targetUser = User::factory()->create();
+        $superAdminRole = Role::where('role_name', 'Super Admin')->firstOrFail();
+
+        $response = $this->actingAs($nonSuperAdmin)->put(route('users.roles.update', $targetUser), [
+            'role_ids' => [$superAdminRole->role_id],
+        ]);
+
+        expect($response->status())->toBe(403);
+    });
+
+    test('non-Super Admin with manage-roles permission cannot modify permissions of Super Admin role', function () {
+        $nonSuperAdmin = createUserWithPermission('manage', 'rbac');
+        $superAdminRole = Role::where('role_name', 'Super Admin')->firstOrFail();
+
+        $response = $this->actingAs($nonSuperAdmin)->put(route('roles.permissions.update', $superAdminRole), [
+            'permission_ids' => [],
         ]);
 
         expect($response->status())->toBe(403);

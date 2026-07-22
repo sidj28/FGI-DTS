@@ -2,7 +2,10 @@
 
 namespace Tests;
 
+use Database\Seeders\DocumentStatusListSeeder;
 use Database\Seeders\RolesAndPermissionsSeeder;
+use Database\Seeders\ShipmentStatusListSeeder;
+use Database\Seeders\ShipmentTypeSeeder;
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
 use Laravel\Fortify\Features;
 
@@ -13,7 +16,12 @@ abstract class TestCase extends BaseTestCase
      */
     protected function seedTestData(): void
     {
-        $this->seed(RolesAndPermissionsSeeder::class);
+        $this->seed([
+            ShipmentStatusListSeeder::class,
+            DocumentStatusListSeeder::class,
+            ShipmentTypeSeeder::class,
+            RolesAndPermissionsSeeder::class,
+        ]);
     }
 
     protected function skipUnlessFortifyHas(string $feature, ?string $message = null): void
