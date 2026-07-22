@@ -24,14 +24,14 @@ beforeEach(function () {
 
 it('allows supply chain manager to create a user', function () {
     $admin = User::factory()->create();
-    $admin->roles()->attach($this->scmRole);
+    $admin->role()->associate($this->scmRole)->save();
 
     actingAs($admin)
         ->post(route('users.store'), [
             'name' => 'New User',
             'email' => 'newuser@example.com',
             'password' => 'Password123!',
-            'role_ids' => [$this->otherRole->role_id],
+            'role_id' => $this->otherRole->role_id,
         ])
         ->assertRedirect()
         ->assertSessionHas('success');
@@ -42,20 +42,20 @@ it('allows supply chain manager to create a user', function () {
     ]);
 
     $newUser = User::where('email', 'newuser@example.com')->first();
-    expect($newUser->roles)->toHaveCount(1);
-    expect($newUser->roles->first()->role_name)->toBe('Logis Assoc');
+    expect($newUser->role_id)->toBe($this->otherRole->role_id);
+    expect($newUser->role->role_name)->toBe('Logis Assoc');
 });
 
 it('denies other roles from creating a user', function () {
     $nonAdmin = User::factory()->create();
-    $nonAdmin->roles()->attach($this->otherRole);
+    $nonAdmin->role()->associate($this->otherRole)->save();
 
     actingAs($nonAdmin)
         ->post(route('users.store'), [
             'name' => 'Should Fail',
             'email' => 'fail@example.com',
             'password' => 'Password123!',
-            'role_ids' => [$this->otherRole->role_id],
+            'role_id' => $this->otherRole->role_id,
         ])
         ->assertForbidden();
 
@@ -66,14 +66,14 @@ it('denies other roles from creating a user', function () {
 
 it('validates user creation input', function () {
     $admin = User::factory()->create();
-    $admin->roles()->attach($this->scmRole);
+    $admin->role()->associate($this->scmRole)->save();
 
     actingAs($admin)
         ->post(route('users.store'), [
             'name' => '',
             'email' => 'invalid-email',
             'password' => 'short',
-            'role_ids' => [],
+            'role_id' => '',
         ])
-        ->assertSessionHasErrors(['name', 'email', 'password', 'role_ids']);
+        ->assertSessionHasErrors(['name', 'email', 'password', 'role_id']);
 });

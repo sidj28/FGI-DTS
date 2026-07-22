@@ -22,6 +22,10 @@ interface Role {
 interface Props {
     roles: Role[];
     permissions: Permission[];
+    auth: {
+        roles: string[];
+        permissions: string[];
+    };
 }
 
 const breadcrumbs = [
@@ -29,7 +33,7 @@ const breadcrumbs = [
     { title: 'Role Management', href: '/roles' },
 ];
 
-export default function Roles({ roles, permissions }: Props) {
+export default function Roles({ roles, permissions, auth }: Props) {
     const [editingRole, setEditingRole] = useState<Role | null>(null);
     const [selectedPermissionIds, setSelectedPermissionIds] = useState<number[]>([]);
 
@@ -114,14 +118,24 @@ return;
                                             </div>
                                         </td>
                                         <td className="px-6 py-4 text-right">
-                                            <Button
-                                                variant="outline"
-                                                size="sm"
-                                                onClick={() => openEditModal(role)}
-                                                className="h-8 gap-1.5 text-xs font-bold text-slate-600 hover:text-purple-600"
-                                            >
-                                                <Edit2 className="size-3" /> Edit Permissions
-                                            </Button>
+                                            {auth.roles.includes(role.role_name) ? (
+                                                <span className="text-xs font-medium text-slate-400 dark:text-slate-500 italic pr-3 select-none">
+                                                    Current Role (Disabled)
+                                                </span>
+                                            ) : role.role_name === 'Super Admin' && !auth.roles.includes('Super Admin') ? (
+                                                <span className="text-xs font-medium text-slate-400 dark:text-slate-500 italic pr-3 select-none">
+                                                    Super Admin (Locked)
+                                                </span>
+                                            ) : (
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    onClick={() => openEditModal(role)}
+                                                    className="h-8 gap-1.5 text-xs font-bold text-slate-600 hover:text-purple-600"
+                                                >
+                                                    <Edit2 className="size-3" /> Edit Permissions
+                                                </Button>
+                                            )}
                                         </td>
                                     </tr>
                                 ))}

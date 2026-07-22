@@ -40,9 +40,10 @@ class HandleInertiaRequests extends Middleware
             ...parent::share($request),
             'name' => config('app.name'),
             'auth' => [
-                'user' => $request->user(),
-                'roles' => $request->user() ? $request->user()->roles->pluck('role_name') : [],
-                'permissions' => $request->user() ? $request->user()->roles->flatMap->permissions->pluck('name')->unique()->values() : [],
+                'user' => $request->user() ? $request->user()->load('role') : null,
+                'role' => $request->user() && $request->user()->role ? $request->user()->role->role_name : null,
+                'roles' => $request->user() && $request->user()->role ? [$request->user()->role->role_name] : [],
+                'permissions' => $request->user() ? $request->user()->getPermissionNames() : [],
             ],
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
             'flash' => [

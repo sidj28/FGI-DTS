@@ -46,12 +46,12 @@ class UserSeeder extends Seeder
             $roleName = $userData['role'];
             unset($userData['role']);
 
-            $user = User::firstOrCreate(['email' => $userData['email']], $userData);
-
             $role = Role::where('role_name', $roleName)->first();
             if ($role) {
-                $user->roles()->syncWithoutDetaching([$role->role_id]);
+                $userData['role_id'] = $role->role_id;
             }
+
+            User::firstOrCreate(['email' => $userData['email']], $userData);
         }
     }
 }
