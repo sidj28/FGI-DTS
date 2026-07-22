@@ -17,7 +17,8 @@ interface User {
     id: number;
     name: string;
     email: string;
-    roles: Role[];
+    role_id: number;
+    role: Role | null;
 }
 
 interface Props {
@@ -39,7 +40,7 @@ export default function Users({ users, roles, auth }: Props) {
     const [editingUser, setEditingUser] = useState<User | null>(null);
     const [isCreating, setIsCreating] = useState(false);
     const [isUpdatingRoles, setIsUpdatingRoles] = useState(false);
-    const [selectedRoleIds, setSelectedRoleIds] = useState<number[]>([]);
+    const [selectedRoleId, setSelectedRoleId] = useState<number | null>(null);
 
     const canCreateUser = auth.permissions.includes('manage-users');
 
@@ -47,33 +48,31 @@ export default function Users({ users, roles, auth }: Props) {
         name: '',
         email: '',
         password: '',
-        role_ids: [] as number[],
+        role_id: null as number | null,
     });
 
     const openEditModal = (user: User) => {
         setEditingUser(user);
-        setSelectedRoleIds(user.roles.map((r) => r.role_id));
+        setSelectedRoleId(user.role_id);
     };
 
     const closeEditModal = () => {
         setEditingUser(null);
-        setSelectedRoleIds([]);
+        setSelectedRoleId(null);
         setIsUpdatingRoles(false);
     };
 
-    const toggleRole = (roleId: number) => {
-        setSelectedRoleIds((prev) =>
-            prev.includes(roleId) ? prev.filter((id) => id !== roleId) : [...prev, roleId]
-        );
+    const selectEditRole = (roleId: number) => {
+        setSelectedRoleId(roleId);
     };
 
     const handleUpdateRoles = () => {
         if (!editingUser) {
-return;
-}
+            return;
+        }
 
         setIsUpdatingRoles(true);
-        router.put(`/users/${editingUser.id}/roles`, { role_ids: selectedRoleIds }, {
+        router.put(`/users/${editingUser.id}/roles`, { role_id: selectedRoleId }, {
             onSuccess: closeEditModal,
             onFinish: () => setIsUpdatingRoles(false),
             preserveScroll: true,
@@ -90,14 +89,8 @@ return;
         });
     };
 
-    const toggleCreateRole = (roleId: number) => {
-        const current = data.role_ids;
-
-        if (current.includes(roleId)) {
-            setData('role_ids', current.filter(id => id !== roleId));
-        } else {
-            setData('role_ids', [...current, roleId]);
-        }
+    const selectCreateRole = (roleId: number) => {
+        setData('role_id', roleId);
     };
 
     return (
@@ -123,7 +116,7 @@ return;
                                 <tr>
                                     <th className="px-6 py-4 text-left text-[11px] font-bold uppercase tracking-wider text-slate-400">Name</th>
                                     <th className="px-6 py-4 text-left text-[11px] font-bold uppercase tracking-wider text-slate-400">Email</th>
-                                    <th className="px-6 py-4 text-left text-[11px] font-bold uppercase tracking-wider text-slate-400">Current Roles</th>
+                                    <th className="px-6 py-4 text-left text-[11px] font-bold uppercase tracking-wider text-slate-400">Current Role</th>
                                     <th className="px-6 py-4 text-right text-[11px] font-bold uppercase tracking-wider text-slate-400">Actions</th>
                                 </tr>
                             </thead>
@@ -136,27 +129,23 @@ return;
                                         <td className="px-6 py-4 text-slate-500">
                                             {user.email}
                                         </td>
-                                        <td className="px-6 py-4">
-                                            <div className="flex flex-wrap gap-2">
-                                                {user.roles.length > 0 ? (
-                                                    user.roles.map((r) => (
-                                                        <span key={r.role_id} className="inline-flex items-center gap-1 rounded-md bg-blue-50 px-2 py-1 text-xs font-bold text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">
-                                                            <ShieldCheck className="size-3" /> {r.role_name}
-                                                        </span>
-                                                    ))
-                                                ) : (
-                                                    <span className="inline-flex items-center gap-1 rounded-md bg-slate-100 px-2 py-1 text-xs font-medium text-slate-500 dark:bg-slate-800 dark:text-slate-400">
-                                                        <ShieldAlert className="size-3" /> No Roles
-                                                    </span>
-                                                )}
-                                            </div>
-                                        </td>
+                                         <td className="px-6 py-4">
+                                             {user.role ? (
+                                                 <span className="inline-flex items-center gap-1 rounded-md bg-blue-50 px-2 py-1 text-xs font-bold text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">
+                                                     <ShieldCheck className="size-3" /> {user.role.role_name}
+                                                 </span>
+                                             ) : (
+                                                 <span className="inline-flex items-center gap-1 rounded-md bg-slate-100 px-2 py-1 text-xs font-medium text-slate-500 dark:bg-slate-800 dark:text-slate-400">
+                                                     <ShieldAlert className="size-3" /> No Role
+                                                 </span>
+                                             )}
+                                         </td>
                                          <td className="px-6 py-4 text-right">
                                              {user.id === auth.user?.id ? (
                                                  <span className="text-xs font-medium text-slate-400 dark:text-slate-500 italic pr-3 select-none">
                                                      Self (Disabled)
                                                  </span>
-                                             ) : user.roles.some((r) => r.role_name === 'Super Admin') && !auth.roles.includes('Super Admin') ? (
+                                             ) : user.role?.role_name === 'Super Admin' && !auth.roles.includes('Super Admin') ? (
                                                  <span className="text-xs font-medium text-slate-400 dark:text-slate-500 italic pr-3 select-none">
                                                      Super Admin (Locked)
                                                  </span>
@@ -230,14 +219,14 @@ return;
                             <Label>Assign Roles</Label>
                             <div className="grid gap-3">
                                 {roles.map((role) => {
-                                    const isSelected = data.role_ids.includes(role.role_id);
+                                    const isSelected = data.role_id === role.role_id;
                                     const isSuperAdminOption = role.role_name === 'Super Admin';
                                     const disabled = isSuperAdminOption && !auth.roles.includes('Super Admin');
 
                                     return (
                                         <div
                                             key={role.role_id}
-                                            onClick={() => !disabled && toggleCreateRole(role.role_id)}
+                                            onClick={() => !disabled && selectCreateRole(role.role_id)}
                                             className={`flex items-center justify-between rounded-lg border p-3 transition-all ${
                                                 disabled
                                                     ? 'opacity-50 cursor-not-allowed border-slate-100 bg-slate-50 dark:border-slate-800 dark:bg-slate-900/50'
@@ -263,7 +252,7 @@ return;
                                     );
                                 })}
                             </div>
-                            {errors.role_ids && <p className="text-xs text-red-500">{errors.role_ids}</p>}
+                            {errors.role_id && <p className="text-xs text-red-500">{errors.role_id}</p>}
                         </div>
                     </div>
                 </ModalShell>
@@ -271,24 +260,24 @@ return;
 
             {editingUser && (
                 <ModalShell
-                    title="Manage User Roles"
-                    subtitle={`Assign or remove roles for ${editingUser.name}`}
+                    title="Manage User Role"
+                    subtitle={`Assign a new role for ${editingUser.name}`}
                     onClose={closeEditModal}
                     onSubmit={handleUpdateRoles}
-                    submitLabel="Save Roles"
+                    submitLabel="Save Role"
                     loading={isUpdatingRoles}
                 >
                     <div className="p-6 space-y-4">
                         <div className="grid gap-4">
                             {roles.map((role) => {
-                                const isSelected = selectedRoleIds.includes(role.role_id);
+                                const isSelected = selectedRoleId === role.role_id;
                                 const isSuperAdminOption = role.role_name === 'Super Admin';
                                 const disabled = isSuperAdminOption && !auth.roles.includes('Super Admin');
 
                                 return (
                                     <div
                                         key={role.role_id}
-                                        onClick={() => !disabled && toggleRole(role.role_id)}
+                                        onClick={() => !disabled && selectEditRole(role.role_id)}
                                         className={`flex items-center justify-between rounded-lg border p-4 transition-all ${
                                             disabled
                                                 ? 'opacity-50 cursor-not-allowed border-slate-100 bg-slate-50 dark:border-slate-800 dark:bg-slate-900/50'

@@ -318,7 +318,7 @@ describe('RBAC enforcement', function () {
 
     test('authorized user cannot update the permissions of a role they possess', function () {
         $user = createUserWithPermission('manage', 'rbac');
-        $possessedRole = $user->roles()->first();
+        $possessedRole = $user->role;
 
         $response = $this->actingAs($user)->put(route('roles.permissions.update', $possessedRole), [
             'permission_ids' => [],
@@ -330,9 +330,10 @@ describe('RBAC enforcement', function () {
     test('non-Super Admin with manage-roles permission cannot modify roles of a Super Admin user', function () {
         $nonSuperAdmin = createUserWithPermission('manage', 'rbac');
         $superAdminUser = createUserWithRole('Super Admin');
+        $someRole = Role::where('role_name', '!=', 'Super Admin')->firstOrFail();
 
         $response = $this->actingAs($nonSuperAdmin)->put(route('users.roles.update', $superAdminUser), [
-            'role_ids' => [],
+            'role_id' => $someRole->role_id,
         ]);
 
         expect($response->status())->toBe(403);
@@ -344,7 +345,7 @@ describe('RBAC enforcement', function () {
         $superAdminRole = Role::where('role_name', 'Super Admin')->firstOrFail();
 
         $response = $this->actingAs($nonSuperAdmin)->put(route('users.roles.update', $targetUser), [
-            'role_ids' => [$superAdminRole->role_id],
+            'role_id' => $superAdminRole->role_id,
         ]);
 
         expect($response->status())->toBe(403);
@@ -368,7 +369,7 @@ describe('RBAC enforcement', function () {
 describe('defense in depth', function () {
     test('permission names follow kebab-case convention', function () {
         $user = createUserWithPermission('add', 'shipments');
-        $permission = $user->roles()->first()?->permissions()->first();
+        $permission = $user->role?->permissions()->first();
 
         expect($permission?->name)->toBe('add-shipments');
     });

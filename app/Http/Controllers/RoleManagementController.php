@@ -28,7 +28,7 @@ class RoleManagementController extends Controller
     {
         Gate::authorize('manage-roles');
 
-        if ($request->user()->roles->contains('role_id', $role->role_id)) {
+        if ($request->user()->role_id === $role->role_id) {
             abort(403, 'You cannot modify the permissions of a role you possess.');
         }
 

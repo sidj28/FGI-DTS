@@ -34,9 +34,9 @@ class PermissionTestHelper
 
         $role = Role::factory()->create();
         $role->permissions()->attach($permission);
-        $user->roles()->attach($role);
+        $user->role()->associate($role)->save();
 
-        return $user->load('roles.permissions');
+        return $user->load('role.permissions');
     }
 
     /**
@@ -63,9 +63,9 @@ class PermissionTestHelper
         }
 
         $role->permissions()->attach($permissionIds);
-        $user->roles()->attach($role);
+        $user->role()->associate($role)->save();
 
-        return $user->load('roles.permissions');
+        return $user->load('role.permissions');
     }
 
     /**
@@ -75,9 +75,9 @@ class PermissionTestHelper
     {
         $user = User::factory()->create();
         $role = Role::where('role_name', $roleName)->firstOrFail();
-        $user->roles()->attach($role);
+        $user->role()->associate($role)->save();
 
-        return $user->load('roles.permissions');
+        return $user->load('role.permissions');
     }
 
     /**
@@ -137,7 +137,7 @@ class PermissionTestHelper
             ->where('resource', $resource)
             ->firstOrFail();
 
-        $user->roles()->first()?->permissions()->syncWithoutDetaching([$permission->permission_id]);
+        $user->role?->permissions()->syncWithoutDetaching([$permission->permission_id]);
     }
 
     /**
@@ -157,7 +157,7 @@ class PermissionTestHelper
             ->where('resource', $resource)
             ->firstOrFail();
 
-        $user->roles()->first()?->permissions()->detach($permission->permission_id);
+        $user->role?->permissions()->detach($permission->permission_id);
     }
 
     /**
@@ -187,7 +187,7 @@ class PermissionTestHelper
      */
     public static function assertUserHasPermission(User $user, string $action, string $resource): void
     {
-        $user->refresh()->load('roles.permissions');
+        $user->refresh()->load('role.permissions');
 
         if (! $user->hasPermission($action, $resource)) {
             throw new \Exception("Expected user {$user->id} to have permission: {$action} on {$resource}");
@@ -199,7 +199,7 @@ class PermissionTestHelper
      */
     public static function assertUserDoesNotHavePermission(User $user, string $action, string $resource): void
     {
-        $user->refresh()->load('roles.permissions');
+        $user->refresh()->load('role.permissions');
 
         if ($user->hasPermission($action, $resource)) {
             throw new \Exception("Expected user {$user->id} to NOT have permission: {$action} on {$resource}");
@@ -211,6 +211,7 @@ class PermissionTestHelper
      */
     public static function clearUserPermissions(User $user): void
     {
-        $user->roles()->detach();
+        $user->role_id = null;
+        $user->save();
     }
 }

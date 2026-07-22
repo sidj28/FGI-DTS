@@ -3,6 +3,7 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+use App\Traits\HasOptimisticLocking;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
@@ -11,14 +12,14 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Fortify\TwoFactorAuthenticatable;
 
-#[Fillable(['name', 'email', 'password'])]
+#[Fillable(['name', 'email', 'password', 'role_id'])]
 #[Hidden(['password', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])]
 class User extends Authenticatable
 {
-    use \App\Traits\HasOptimisticLocking;
-
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable, TwoFactorAuthenticatable;
+
+    use HasOptimisticLocking;
 
     /**
      * Get the attributes that should be cast.
@@ -34,9 +35,9 @@ class User extends Authenticatable
         ];
     }
 
-    public function roles()
+    public function role()
     {
-        return $this->belongsToMany(Role::class, 'user_roles', 'user_id', 'role_id');
+        return $this->belongsTo(Role::class, 'role_id', 'role_id');
     }
 
     public function documentStatuses()
@@ -49,12 +50,12 @@ class User extends Authenticatable
      */
     public function hasRole($roleName): bool
     {
-        // Eager load roles if not already loaded
-        if (! $this->relationLoaded('roles')) {
-            $this->load('roles');
+        // Eager load role if not already loaded
+        if (! $this->relationLoaded('role')) {
+            $this->load('role');
         }
 
-        return $this->roles->contains('role_name', $roleName);
+        return $this->role?->role_name === $roleName;
     }
 
     /**
@@ -62,13 +63,13 @@ class User extends Authenticatable
      */
     public function hasPermission(string $action, string $resource): bool
     {
-        // Eager load roles and permissions if not loaded
-        if (! $this->relationLoaded('roles')) {
-            $this->load('roles.permissions');
+        // Eager load role and permissions if not loaded
+        if (! $this->relationLoaded('role')) {
+            $this->load('role.permissions');
         }
 
-        foreach ($this->roles as $role) {
-            foreach ($role->permissions as $permission) {
+        if ($this->role) {
+            foreach ($this->role->permissions as $permission) {
                 if ($permission->action === $action && $permission->resource === $resource) {
                     return true;
                 }
@@ -83,15 +84,12 @@ class User extends Authenticatable
      */
     public function getPermissionNames(): array
     {
-        if (! $this->relationLoaded('roles')) {
-            $this->load('roles.permissions');
+        if (! $this->relationLoaded('role')) {
+            $this->load('role.permissions');
         }
 
-        return $this->roles
-            ->flatMap(fn ($role) => $role->permissions)
-            ->pluck('name')
-            ->unique()
-            ->values()
-            ->toArray();
+        return $this->role
+            ? $this->role->permissions->pluck('name')->unique()->values()->toArray()
+            : [];
     }
 }
