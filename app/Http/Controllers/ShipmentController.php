@@ -325,9 +325,11 @@ class ShipmentController extends Controller
 
     public function restore(Shipment $shipment)
     {
-        Gate::authorize('delete-shipments');
+        Gate::authorize('archive-shipments');
 
         $shipment->update(['archived_at' => null]);
+
+        ActivityLogger::log('restored', "Restored shipment \"{$shipment->shipment_reference}\".", $shipment);
 
         return back();
     }

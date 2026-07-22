@@ -86,42 +86,110 @@ function SubjectBadge({ type }: { type: string | null }) {
     );
 }
 
+function extractShipmentReference(description?: string): string | null {
+    if (!description) {
+        return null;
+    }
+
+    const match = description.match(/"(.*?)"/);
+    return match ? match[1] : null;
+}
+
 function PropertyChangeSummary({ properties, permissions }: { properties: Record<string, unknown> | null, permissions?: Record<string, string> }) {
     if (!properties) {
         return null;
     }
 
+    const formatValue = (value: unknown): string => {
+        if (value === null || value === undefined) {
+            return '—';
+        }
+
+        if (typeof value === 'string') {
+            return value;
+        }
+
+        if (typeof value === 'number' || typeof value === 'boolean') {
+            return String(value);
+        }
+
+        if (Array.isArray(value)) {
+            return value.map((item) => formatValue(item)).join(', ');
+        }
+
+        if (typeof value === 'object') {
+            return Object.entries(value as Record<string, unknown>)
+                .map(([key, item]) => `${key}: ${formatValue(item)}`)
+                .join(', ');
+        }
+
+        return String(value);
+    };
+
     // map common permission id arrays to readable names when a lookup is provided
     if (permissions && Array.isArray(properties.permission_ids)) {
         const ids = properties.permission_ids as Array<string | number>;
         const names = ids.map((id) => permissions[String(id)] ?? `#${id}`);
-        // prefer showing the mapped names as the main summary
-        properties = { ...properties, from: names.join(', '), to: names.join(', '), permission_names: names };
+        properties = { ...properties, permission_names: names };
+
+        if (properties.from === undefined && properties.to === undefined) {
+            properties = { ...properties, from: names.join(', '), to: names.join(', ') };
+        }
     }
 
-    const fromValue = properties.from ?? properties.old_status_name ?? properties.old_status_id ?? null;
-    const toValue = properties.to ?? properties.new_status_name ?? properties.new_status_id ?? null;
+    const diffFromTo = (() => {
+        if (properties.old !== undefined && properties.new !== undefined) {
+            if (
+                typeof properties.old === 'object' &&
+                properties.old !== null &&
+                !Array.isArray(properties.old) &&
+                typeof properties.new === 'object' &&
+                properties.new !== null &&
+                !Array.isArray(properties.new)
+            ) {
+                const oldObj = properties.old as Record<string, unknown>;
+                const newObj = properties.new as Record<string, unknown>;
+                const changedKeys = Array.from(new Set([...Object.keys(oldObj), ...Object.keys(newObj)])).filter((key) => {
+                    const oldValue = oldObj[key];
+                    const newValue = newObj[key];
+                    return JSON.stringify(oldValue) !== JSON.stringify(newValue);
+                });
 
-    const fromLabel = fromValue == null
-        ? '—'
-        : typeof fromValue === 'string'
-            ? fromValue
-            : typeof fromValue === 'number'
-                ? String(fromValue)
-                : JSON.stringify(fromValue);
+                if (changedKeys.length === 1) {
+                    const key = changedKeys[0];
+                    return {
+                        from: oldObj[key],
+                        to: newObj[key],
+                    };
+                }
 
-    const toLabel = toValue == null
-        ? '—'
-        : typeof toValue === 'string'
-            ? toValue
-            : typeof toValue === 'number'
-                ? String(toValue)
-                : JSON.stringify(toValue);
+                if (changedKeys.length > 1) {
+                    return {
+                        from: Object.fromEntries(changedKeys.map((key) => [key, oldObj[key]])),
+                        to: Object.fromEntries(changedKeys.map((key) => [key, newObj[key]])),
+                    };
+                }
+            }
 
-    const shouldShowInlineSummary = properties.from !== undefined || properties.to !== undefined || properties.old_status_name !== undefined || properties.new_status_name !== undefined || properties.old_status_id !== undefined || properties.new_status_id !== undefined;
+            return {
+                from: properties.old,
+                to: properties.new,
+            };
+        }
+
+        return undefined;
+    })();
+
+    const fromValue = properties.from ?? (Array.isArray(properties.old_permission_names) ? properties.old_permission_names.join(', ') : undefined) ?? properties.old_status_name ?? properties.old_status_id ?? diffFromTo?.from ?? null;
+    const toValue = properties.to ?? (Array.isArray(properties.new_permission_names) ? properties.new_permission_names.join(', ') : undefined) ?? properties.new_status_name ?? properties.new_status_id ?? diffFromTo?.to ?? null;
+
+    const fromLabel = formatValue(fromValue);
+    const toLabel = formatValue(toValue);
+
+    const shouldShowInlineSummary = properties.from !== undefined || properties.to !== undefined || properties.old_status_name !== undefined || properties.new_status_name !== undefined || properties.old_status_id !== undefined || properties.new_status_id !== undefined || diffFromTo !== undefined;
 
     if (shouldShowInlineSummary) {
-        const extraEntries = Object.entries(properties).filter(([key]) => !['from', 'to', 'old_status_name', 'new_status_name', 'old_status_id', 'new_status_id', 'permission_ids', 'permission_names', 'old_permission_names', 'new_permission_names'].includes(key));
+        const extraEntries = Object.entries(properties).filter(([key]) => !['from', 'to', 'old_status_name', 'new_status_name', 'old_status_id', 'new_status_id', 'permission_ids', 'permission_names', 'old_permission_names', 'new_permission_names', 'old', 'new'].includes(key));
 
         return (
             <div className="space-y-3">
@@ -224,7 +292,6 @@ export default function LogsIndex({ logs: paginator, filters, permissions }: Pro
                             <th className="px-4 py-3 font-black uppercase tracking-widest text-slate-400 text-[9px]">Action</th>
                             <th className="px-4 py-3 font-black uppercase tracking-widest text-slate-400 text-[9px]">Entity</th>
                             <th className="px-4 py-3 font-black uppercase tracking-widest text-slate-400 text-[9px]">Description</th>
-                            <th className="px-4 py-3 font-black uppercase tracking-widest text-slate-400 text-[9px]">IP</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -275,15 +342,29 @@ export default function LogsIndex({ logs: paginator, filters, permissions }: Pro
                                     <td className="px-4 py-3 text-slate-600 dark:text-slate-300 max-w-xs truncate">
                                         {log.description}
                                     </td>
-                                    <td className="px-4 py-3 font-mono text-[9px] text-slate-400 whitespace-nowrap">
-                                        {log.ip_address ?? '—'}
-                                    </td>
+                                    
                                 </tr>
-                                {expandedId === log.id && log.properties && (
+                                {expandedId === log.id && (
                                     <tr key={`${log.id}-expanded`} className="bg-slate-50/80 dark:bg-slate-900/30 border-b border-slate-100 dark:border-slate-800/40">
-                                        <td colSpan={6} className="px-6 py-4">
-                                            <p className="mb-2 text-[9px] font-black uppercase tracking-widest text-slate-400">Changed Properties</p>
-                                            <PropertyChangeSummary properties={log.properties} permissions={permissions} />
+                                        <td colSpan={5} className="px-6 py-4">
+                                            <p className="mb-2 text-[9px] font-black uppercase tracking-widest text-slate-400">Details</p>
+                                            {log.properties ? (
+                                                <PropertyChangeSummary properties={log.properties} permissions={permissions} />
+                                            ) : (
+                                                <div className="grid gap-3 sm:grid-cols-2">
+                                                    {[
+                                                        { label: 'Action', value: log.action },
+                                                        { label: 'Description', value: log.description },
+                                                        { label: 'Reference', value: extractShipmentReference(log.description) ?? '—' },
+                                                        { label: 'Modified', value: log.created_at ? format(new Date(log.created_at), 'dd MMM yyyy HH:mm:ss') : '—' },
+                                                    ].map((item) => (
+                                                        <div key={item.label} className="rounded-lg border border-slate-200/80 bg-white px-3 py-2 dark:border-slate-800 dark:bg-slate-900/60">
+                                                            <p className="text-[8px] font-black uppercase tracking-[0.3em] text-slate-400">{item.label}</p>
+                                                            <p className="mt-1 text-sm font-semibold text-slate-700 dark:text-slate-200 whitespace-pre-line">{item.value}</p>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )}
                                         </td>
                                     </tr>
                                 )}
