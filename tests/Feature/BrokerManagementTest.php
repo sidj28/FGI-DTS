@@ -95,6 +95,7 @@ it('validates broker name must be unique', function () {
 
 it('allows supply chain manager to update a broker', function () {
     $broker = Broker::create(['broker_name' => 'Old Name', 'is_active' => true]);
+    $broker->refresh();
 
     $admin = createUserWithPermission('edit', 'brokers');
 
@@ -102,6 +103,7 @@ it('allows supply chain manager to update a broker', function () {
         ->patch(route('brokers.update', $broker->broker_id), [
             'broker_name' => 'New Name',
             'is_active' => false,
+            'version' => $broker->version,
         ])
         ->assertRedirect();
 
