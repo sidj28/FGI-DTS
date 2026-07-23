@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Broker;
 use App\Models\Shipment;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -48,7 +49,7 @@ class DashboardController extends Controller
         $chartData = collect();
 
         $latestDateStr = Shipment::max('created_at');
-        $referenceDate = $latestDateStr ? \Carbon\Carbon::parse($latestDateStr) : now();
+        $referenceDate = $latestDateStr ? Carbon::parse($latestDateStr) : now();
         $thirtyDaysAgo = (clone $referenceDate)->subDays(29)->startOfDay();
 
         $recentShipments = Shipment::with('status')

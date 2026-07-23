@@ -19,7 +19,6 @@ use Inertia\Inertia;
 
 class ShipmentController extends Controller
 {
-
     public function index(Request $request)
     {
         $archiveFilter = $request->query('archive', 'active');

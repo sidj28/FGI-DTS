@@ -18,11 +18,13 @@ Route::get('/secret-seed', function () {
     Artisan::call('db:seed', ['--class' => 'DocumentStatusListSeeder']);
     Artisan::call('db:seed', ['--class' => 'CustomDocSeeder']);
     Artisan::call('db:seed', ['--class' => 'ShipmentStatusListSeeder']);
+
     return 'Seeded successfully!';
 });
 
 Route::get('/run-scheduler-secret-fgi2026dts', function () {
     Artisan::call('schedule:run');
+
     return 'Scheduler executed';
 });
 

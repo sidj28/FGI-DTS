@@ -10,11 +10,11 @@ class StaleModelException extends Exception
 {
     public $model;
 
-    public function __construct(Model $model, $message = "", $code = 0, ?Throwable $previous = null)
+    public function __construct(Model $model, $message = '', $code = 0, ?Throwable $previous = null)
     {
         $this->model = $model;
 
-        if ($message === "") {
+        if ($message === '') {
             $class = class_basename($model);
             $message = "The {$class} has been modified by another user. Please refresh and try again.";
         }
