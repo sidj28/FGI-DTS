@@ -3,6 +3,7 @@
 namespace App\Traits;
 
 use App\Exceptions\StaleModelException;
+use Illuminate\Database\Eloquent\Builder;
 
 trait HasOptimisticLocking
 {
@@ -20,15 +21,15 @@ trait HasOptimisticLocking
     /**
      * Set the keys for a save update query.
      *
-     * @param  \Illuminate\Database\Eloquent\Builder  $query
-     * @return \Illuminate\Database\Eloquent\Builder
+     * @param  Builder  $query
+     * @return Builder
      */
     protected function setKeysForSaveQuery($query)
     {
         $query = parent::setKeysForSaveQuery($query);
 
         $versionColumn = $this->getOptimisticLockingColumn();
-        
+
         // Ensure the model actually exists and we have the original version
         if ($this->exists && array_key_exists($versionColumn, $this->getOriginal())) {
             $query->where($versionColumn, $this->getOriginal($versionColumn));
@@ -40,12 +41,11 @@ trait HasOptimisticLocking
     /**
      * Perform a model update operation.
      *
-     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return bool
      *
-     * @throws \App\Exceptions\StaleModelException
+     * @throws StaleModelException
      */
-    protected function performUpdate(\Illuminate\Database\Eloquent\Builder $query)
+    protected function performUpdate(Builder $query)
     {
         if ($this->fireModelEvent('updating') === false) {
             return false;

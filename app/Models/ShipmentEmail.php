@@ -2,12 +2,13 @@
 
 namespace App\Models;
 
+use App\Traits\HasOptimisticLocking;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class ShipmentEmail extends Model
 {
-    use \App\Traits\HasOptimisticLocking;
+    use HasOptimisticLocking;
 
     protected $fillable = [
         'user_id',

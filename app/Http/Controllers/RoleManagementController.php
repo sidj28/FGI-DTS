@@ -50,6 +50,9 @@ class RoleManagementController extends Controller
         // resolve new permission names
         $newPermissionNames = Permission::whereIn('permission_id', $validated['permission_ids'] ?? [])->pluck('name')->toArray();
 
+        $addedPermissions = array_values(array_diff($newPermissionNames, $oldPermissionNames));
+        $removedPermissions = array_values(array_diff($oldPermissionNames, $newPermissionNames));
+
         ActivityLogger::log(
             'permissions_updated',
             "Updated permissions for role \"{$role->role_name}\".",
@@ -58,6 +61,10 @@ class RoleManagementController extends Controller
                 'permission_ids' => $validated['permission_ids'] ?? [],
                 'old_permission_names' => $oldPermissionNames,
                 'new_permission_names' => $newPermissionNames,
+                'added_permissions' => $addedPermissions,
+                'removed_permissions' => $removedPermissions,
+                'added' => implode(', ', $addedPermissions),
+                'removed' => implode(', ', $removedPermissions),
                 'from' => implode(', ', $oldPermissionNames),
                 'to' => implode(', ', $newPermissionNames),
             ],

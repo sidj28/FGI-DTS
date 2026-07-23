@@ -3,13 +3,14 @@
 namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Schema;
 
 class DatabaseSeeder extends Seeder
 {
     public function run(): void
     {
-        \Illuminate\Support\Facades\Schema::disableForeignKeyConstraints();
-        
+        Schema::disableForeignKeyConstraints();
+
         $this->call([
             ShipmentStatusListSeeder::class,
             DocumentStatusListSeeder::class,
@@ -22,8 +23,8 @@ class DatabaseSeeder extends Seeder
             RolesAndPermissionsSeeder::class,
             UserSeeder::class,
         ]);
-        
-        \Illuminate\Support\Facades\Schema::enableForeignKeyConstraints();
-        
+
+        Schema::enableForeignKeyConstraints();
+
     }
 }

@@ -2,14 +2,14 @@
 
 namespace App\Models;
 
+use App\Traits\HasOptimisticLocking;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Broker extends Model
 {
-    use \App\Traits\HasOptimisticLocking;
-
     use HasFactory;
+    use HasOptimisticLocking;
 
     protected $table = 'brokers';
 

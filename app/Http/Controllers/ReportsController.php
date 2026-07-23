@@ -6,8 +6,8 @@ use App\Models\Broker;
 use App\Models\DocumentStatus;
 use App\Models\Shipment;
 use App\Models\ShipmentDocument;
-use Illuminate\Http\Request;
 use Carbon\Carbon;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 
@@ -79,7 +79,7 @@ class ReportsController extends Controller
             ->where('status_name', 'Completed')
             ->pluck('status_id')
             ->toArray();
-            
+
         $completedIdsStr = empty($completedStatusIds) ? '0' : implode(',', $completedStatusIds);
 
         $completeVsIncomplete = $applyShipmentFilters(Shipment::query())
