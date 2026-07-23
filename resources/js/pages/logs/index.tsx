@@ -1,6 +1,6 @@
 import { Head, Link } from '@inertiajs/react';
 import * as logsRoute from '@/routes/logs';
-import { useState } from 'react';
+import { Fragment, useState } from 'react';
 import { DatePickerWithRange } from '@/components/ui/date-range-picker';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -420,7 +420,7 @@ export default function LogsIndex({ logs: paginator, filters, permissions }: Pro
                             </tr>
                         )}
                         {filteredLogs.map((log) => (
-                            <>
+                            <Fragment key={log.id}>
                                 <tr
                                     key={log.id}
                                     onClick={() => setExpandedId(expandedId === log.id ? null : log.id)}
@@ -484,7 +484,7 @@ export default function LogsIndex({ logs: paginator, filters, permissions }: Pro
                                         </td>
                                     </tr>
                                 )}
-                            </>
+                            </Fragment>
                         ))}
                     </tbody>
                 </table>
