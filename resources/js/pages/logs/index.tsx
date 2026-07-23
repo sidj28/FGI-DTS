@@ -462,7 +462,7 @@ export default function LogsIndex({ logs: paginator, filters, permissions }: Pro
                                 </tr>
                                 {expandedId === log.id && (
                                     <tr key={`${log.id}-expanded`} className="bg-slate-50/80 dark:bg-slate-900/30 border-b border-slate-100 dark:border-slate-800/40">
-                                        <td colSpan={5} className="px-6 py-4">
+                                        <td colSpan={5} className="px-4 py-2">
                                             <p className="mb-2 text-[9px] font-black uppercase tracking-widest text-slate-400">Details</p>
                                             {log.properties ? (
                                                 <PropertyChangeSummary properties={log.properties} permissions={permissions} action={log.action} />
